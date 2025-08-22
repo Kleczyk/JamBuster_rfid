@@ -1,0 +1,20 @@
+[project]
+name = "sumo_single_intersection"
+version = "0.1.0"
+description = "Configuration for training a PPO agent on a single traffic intersection using SUMO-RL, RLlib and Ray."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "sumo-rl>=1.4.5",  # SUMO RL environment for traffic signal control
+    "ray[rllib]>=2.7.0",  # RLlib and Tune for distributed training
+    "torch>=1.13.1",     # deep learning backend
+    "gymnasium>=0.28.0", # Gym API used by sumo-rl for single-agent envs
+    "pettingzoo>=1.23.0", # for parallel env wrapper (multi-agent)
+    "pandas>=1.5.0",     # optional logging
+    "numpy>=1.23.4",
+    "traci>=1.18.0"      # interface to the SUMO simulator
+]
+
+# uv-specific settings: limit concurrency for downloads to improve stability.
+[tool.uv]
+concurrent-downloads = 8
