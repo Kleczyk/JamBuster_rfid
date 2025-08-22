@@ -1,53 +1,20 @@
 [project]
-name = "rl-traffic-control"
+name = "sumo_single_intersection"
 version = "0.1.0"
-description = "Reinforcement Learning Traffic Control with SUMO Simulation"
+description = "Configuration for training a PPO agent on a single traffic intersection using SUMO-RL, RLlib and Ray."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
-    "torch>=2.1.0",
-    "ray[tune]>=2.8.0",
-    "sumo-rl>=1.4.0",
-    "gymnasium>=0.29.0",
-    "pettingzoo<1.25.0",
-    "numpy>=1.24.0",
-    "pandas>=2.0.0",
-    "matplotlib>=3.7.0",
-    "seaborn>=0.12.0",
-    "tensorboard>=2.14.0",
-    "pyyaml>=6.0",
-    "hydra-core>=1.3.0",
-    "dm-tree>=0.1.9",
-    "scipy>=1.10.0",
-    "lz4>=4.0.0",
+    "sumo-rl>=1.4.5",  # SUMO RL environment for traffic signal control
+    "ray[rllib]>=2.7.0",  # RLlib and Tune for distributed training
+    "torch>=1.13.1",     # deep learning backend
+    "gymnasium>=0.28.0", # Gym API used by sumo-rl for single-agent envs
+    "pettingzoo>=1.23.0", # for parallel env wrapper (multi-agent)
+    "pandas>=1.5.0",     # optional logging
+    "numpy>=1.23.4",
+    "traci>=1.18.0"      # interface to the SUMO simulator
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-    "mypy>=1.5.0",
-    "pre-commit>=3.4.0",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.black]
-line-length = 88
-target-version = ['py312']
-
-[tool.isort]
-profile = "black"
-line_length = 88
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
+# uv-specific settings: limit concurrency for downloads to improve stability.
+[tool.uv]
+concurrent-downloads = 8
