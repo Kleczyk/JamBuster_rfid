@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-08-22 21:32:05.501420 by randomTrips.py UNKNOWN
+<configuration>
+    <net-file value="single1l.net.xml"/>
+    <output-trip-file value="eme.trips.xml"/>
+    <vtype-output value="eme"/>
+    <prefix value="eme_"/>
+    <edge-permission value="emergency"/>
+    <seed value="3"/>
+    <min-distance value="60.0"/>
+    <period value="30.0"/>
+</configuration>
+-->
+
+<!-- generated on 2025-08-22 21:32:05 by Eclipse SUMO duarouter Version 1.24.0
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="single1l.net.xml"/>
+        <route-files value="eme.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="routes.rou.xml"/>
+        <vtype-output value="eme"/>
+        <alternatives-output value="NUL"/>
+    </output>
+
+    <time>
+        <begin value="0.0"/>
+        <end value="3600.0"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <ignore-errors value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vehicle id="eme_0" depart="0.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_1" depart="30.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_2" depart="60.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_3" depart="90.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_4" depart="120.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_5" depart="150.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_6" depart="180.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_7" depart="210.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_8" depart="240.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_9" depart="270.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_10" depart="300.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_11" depart="330.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_12" depart="360.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_13" depart="390.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_14" depart="420.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_15" depart="450.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_16" depart="480.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_17" depart="510.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_18" depart="540.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_19" depart="570.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_20" depart="600.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_21" depart="630.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_22" depart="660.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_23" depart="690.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_24" depart="720.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_25" depart="750.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_26" depart="780.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_27" depart="810.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_28" depart="840.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_29" depart="870.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_30" depart="900.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_31" depart="930.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_32" depart="960.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_33" depart="990.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_34" depart="1020.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_35" depart="1050.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_36" depart="1080.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_37" depart="1110.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_38" depart="1140.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_39" depart="1170.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_40" depart="1200.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_41" depart="1230.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_42" depart="1260.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_43" depart="1290.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_44" depart="1320.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_45" depart="1350.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_46" depart="1380.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_47" depart="1410.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_48" depart="1440.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_49" depart="1470.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_50" depart="1500.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_51" depart="1530.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_52" depart="1560.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_53" depart="1590.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_54" depart="1620.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_55" depart="1650.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_56" depart="1680.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_57" depart="1710.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_58" depart="1740.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_59" depart="1770.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_60" depart="1800.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_61" depart="1830.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_62" depart="1860.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_63" depart="1890.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_64" depart="1920.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_65" depart="1950.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_66" depart="1980.00">
+        <route edges="B3B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_67" depart="2010.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_68" depart="2040.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_69" depart="2070.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_70" depart="2100.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_71" depart="2130.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_72" depart="2160.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_73" depart="2190.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_74" depart="2220.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_75" depart="2250.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_76" depart="2280.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_77" depart="2310.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_78" depart="2340.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_79" depart="2370.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_80" depart="2400.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_81" depart="2430.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_82" depart="2460.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_83" depart="2490.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_84" depart="2520.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_85" depart="2550.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_86" depart="2580.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_87" depart="2610.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_88" depart="2640.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_89" depart="2670.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_90" depart="2700.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_91" depart="2730.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_92" depart="2760.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_93" depart="2790.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_94" depart="2820.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_95" depart="2850.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_96" depart="2880.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_97" depart="2910.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_98" depart="2940.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_99" depart="2970.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_100" depart="3000.00">
+        <route edges="B3B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_101" depart="3030.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_102" depart="3060.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_103" depart="3090.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_104" depart="3120.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_105" depart="3150.00">
+        <route edges="B1B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_106" depart="3180.00">
+        <route edges="B1B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_107" depart="3210.00">
+        <route edges="A2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_108" depart="3240.00">
+        <route edges="B1B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_109" depart="3270.00">
+        <route edges="C2B2 B2B1"/>
+    </vehicle>
+    <vehicle id="eme_110" depart="3300.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_111" depart="3330.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_112" depart="3360.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_113" depart="3390.00">
+        <route edges="A2B2 B2B3"/>
+    </vehicle>
+    <vehicle id="eme_114" depart="3420.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_115" depart="3450.00">
+        <route edges="C2B2 B2A2"/>
+    </vehicle>
+    <vehicle id="eme_116" depart="3480.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_117" depart="3510.00">
+        <route edges="A2B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_118" depart="3540.00">
+        <route edges="B3B2 B2C2"/>
+    </vehicle>
+    <vehicle id="eme_119" depart="3570.00">
+        <route edges="C2B2 B2B3"/>
+    </vehicle>
+</routes>
