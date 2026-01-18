@@ -42,7 +42,6 @@ rollout:
   num_envs_per_env_runner: 1
   rollout_fragment_length: 1000
   batch_mode: truncate_episodes
-
 resources:
   num_cpus: 220
   num_gpus: 4
