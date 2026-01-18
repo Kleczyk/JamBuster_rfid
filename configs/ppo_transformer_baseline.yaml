@@ -84,7 +84,7 @@ tune:
     rollout_fragment_length: auto
     num_gpus: 0.2
     num_cpus: 11
-    num_env_runners: 6
+    num_env_runners: 1
     num_envs_per_env_runner: 1
     env_config:
       sumo_threads: 2
