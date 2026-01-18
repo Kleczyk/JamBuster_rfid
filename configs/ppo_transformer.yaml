@@ -38,18 +38,18 @@ training:
   vf_loss_coeff: 1.0
 
 rollout:
-  num_env_runners: 16
+  num_env_runners: 210
   num_envs_per_env_runner: 1
   rollout_fragment_length: 1000
   batch_mode: truncate_episodes
 
 resources:
   num_cpus: 220
-  num_gpus: 1
+  num_gpus: 4
   object_store_memory_gb: 40
 
 ray:
-  memory_usage_threshold: 0.90
+  memory_usage_threshold: 0.50
   memory_monitor_refresh_ms: 1000
 
 stopping:
