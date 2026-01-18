@@ -61,8 +61,8 @@ tune:
   metric: custom_metrics/delay_mean
   mode: min
   tensorboard_hparams: true
-  num_samples: 100
-  max_concurrent_trials: 4
+  num_samples: 1000
+  max_concurrent_trials: 100
   stop_timesteps: 200000
   config_overrides:
     rollout_fragment_length: auto
