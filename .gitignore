@@ -1,0 +1,19 @@
+.idea/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Outputs and logs
+ray_results/
+outputs/
+*.log
+**/simulation.log
+**/queueoutput.xml
+**/tripinfo.xml
+**/summary.xml
+
+# Local research artifacts
+article/
+
