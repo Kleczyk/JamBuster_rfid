@@ -31,15 +31,15 @@ training:
   gamma: 0.99
   lambda_: 0.95
   clip_param: 0.2
-  train_batch_size: 16000
-  minibatch_size: 512
+  train_batch_size: 32000
+  minibatch_size: 1024
   num_epochs: 10
   entropy_coeff: 0.0
   vf_loss_coeff: 1.0
 
 rollout:
-  num_env_runners: 210
-  num_envs_per_env_runner: 1
+  num_env_runners: 220
+  num_envs_per_env_runner: 2
   rollout_fragment_length: auto
   batch_mode: truncate_episodes
 resources:
