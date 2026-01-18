@@ -45,7 +45,7 @@ rollout:
 resources:
   num_cpus: 220
   num_gpus: 4
-  object_store_memory_gb: 40
+  object_store_memory_gb: 400
 
 ray:
   memory_usage_threshold: 0.90
