@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+import inspect
 
 import ray
 import yaml
@@ -109,7 +110,10 @@ def build_config(cfg: dict) -> PPOConfig:
             eval_args["evaluation_config"] = eval_config
 
         if eval_args:
-            config = config.evaluation(**eval_args)
+            allowed = set(inspect.signature(config.evaluation).parameters.keys())
+            eval_args = {key: value for key, value in eval_args.items() if key in allowed}
+            if eval_args:
+                config = config.evaluation(**eval_args)
 
     return config
 
