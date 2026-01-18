@@ -48,7 +48,7 @@ resources:
   object_store_memory_gb: 40
 
 ray:
-  memory_usage_threshold: 0.50
+  memory_usage_threshold: 0.90
   memory_monitor_refresh_ms: 1000
 
 stopping:
