@@ -113,3 +113,111 @@ traffic signal control.  To extend it to multi‑intersection scenarios you can:
 
 Feel free to experiment and adapt the network/route files to your own traffic
 scenarios.
+
+## PPO-Transformer (RFID, SUMO, RLlib)
+
+This repo includes a reproducible **PPO-Transformer** setup based on the paper
+*Adaptive traffic signal control using PPO-Transformer and RFID-based vehicle
+detection in the SUMO environment*. The scenario uses RFID-like E1 detectors
+and trains a PPO policy with a Transformer encoder and two action heads.
+
+### Scenario
+
+- Network: `nets/ppo_transformer_intersection/`
+- RFID detectors: `rfid_detectors.add.xml` (E1 loops on all incoming lanes)
+- SUMO config: `simulation.sumocfg`
+
+### Train PPO-Transformer
+
+```bash
+uv run python train_ppo_transformer.py \
+  --config configs/ppo_transformer.yaml
+```
+
+### Hyperparameter tuning (Optuna + Ray Tune)
+
+Tune uses the `tune` section in `configs/ppo_transformer.yaml` for search space,
+metric, and budget. CLI flags override the YAML values.
+Hyperparameters are logged to TensorBoard (hparams tab) when each trial ends.
+
+```bash
+uv run python tune_ppo_transformer.py \
+  --config configs/ppo_transformer.yaml \
+  --num-samples 100 \
+  --stop-timesteps 200000 \
+  --max-concurrent 4
+```
+
+### TensorBoard (real-time metrics)
+
+Custom metrics (`delay`, `queue`, `stops`, `throughput`) are logged to
+TensorBoard by `callbacks/metrics_callbacks.py`.
+
+```bash
+tensorboard --logdir ray_results
+```
+
+## Realtime Traffic Metrics (TraCI)
+
+To collect **per‑lane** and **per‑junction** metrics in real time (queues, speeds,
+waiting times, stops, vehicle mix), use the TraCI collector:
+
+```bash
+uv run python tools/collect_intersection_metrics.py \
+  --config nets/simple_intersection/simulation.sumocfg \
+  --output-dir outputs/metrics \
+  --end 60
+```
+
+Outputs:
+
+- `outputs/metrics/lane_metrics.csv`
+- `outputs/metrics/junction_metrics.csv`
+
+Key fields include `veh_count`, `halt_count`, `queue_length_m`, `mean_speed`,
+`avg_waiting_time`, `avg_time_loss`, `stop_events`, and `type_counts_json`.
+
+Useful options:
+
+- `--sample-interval 5` (collect every N steps)
+- `--queue-speed-threshold 0.1` (queue detection)
+- `--gui` (run with SUMO‑GUI)
+
+## Downloading SUMO Documentation
+
+This repository includes a script to download the complete SUMO documentation
+and convert it to well-linked Markdown files. This is useful for offline
+reference or for processing the documentation.
+
+To download and process the SUMO documentation:
+
+```bash
+# Using uv (recommended)
+uv run python download_sumo_docs.py
+
+# Or with custom output directory
+uv run python download_sumo_docs.py --output ./my_sumo_docs
+
+# Keep temporary cloned repository (useful for debugging)
+uv run python download_sumo_docs.py --keep-temp
+```
+
+The script will:
+1. Clone the SUMO repository from GitHub (or update if already exists)
+2. Extract all Markdown documentation files from `docs/web/docs/`
+3. Fix internal links to be relative paths
+4. Copy images and other assets
+5. Create an `index.md` file with links to all documentation pages
+6. Clean up temporary files (unless `--keep-temp` is used)
+
+The processed documentation will be saved in `./sumo_docs_md/` by default (or in
+the directory specified with `--output`). You can then browse the documentation
+using any Markdown viewer or convert it to other formats as needed.
+
+
+
+
+
+
+
+
