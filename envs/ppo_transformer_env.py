@@ -135,6 +135,9 @@ class PPOTransformerEnv(gym.Env):
 
         self.use_gui = bool(config.get("use_gui", False))
         self.sumo_binary = config.get("sumo_binary", "sumo")
+        self.sumo_threads = int(config.get("sumo_threads", 0) or 0)
+        self.sumo_step_length = float(config.get("sumo_step_length", 0) or 0)
+        self.sumo_extra_args = list(config.get("sumo_extra_args", []) or [])
         self.delta_time = int(config.get("delta_time", 5))
         self.yellow_time = int(config.get("yellow_time", 3))
         self.t_green_min = int(config.get("t_green_min", 10))
@@ -142,6 +145,9 @@ class PPOTransformerEnv(gym.Env):
         self.obs_window = int(config.get("obs_window", 48))
         self.queue_speed_threshold = float(config.get("queue_speed_threshold", 0.1))
         self.tls_id = config.get("tls_id", "center")
+        self.episode_horizon_steps = int(config.get("episode_horizon_steps", 0) or 0)
+        self.soft_reset = bool(config.get("soft_reset", True))
+        self.rfid_noise_rate = _clamp(float(config.get("rfid_noise_rate", 0.0)), 0.0, 1.0)
 
         self.alpha = float(config.get("reward_alpha", 0.55))
         self.beta = float(config.get("reward_beta", 0.30))
@@ -171,6 +177,7 @@ class PPOTransformerEnv(gym.Env):
 
         self.conn = None
         self._traci_label = None
+        self._started = False
 
         self.window_counts = None
         self.obs_history: Deque[np.ndarray] = deque(maxlen=self.obs_window)
@@ -187,12 +194,20 @@ class PPOTransformerEnv(gym.Env):
         self.queue_accum = 0.0
         self.stops_accum = 0
         self.throughput_accum = 0
+        self.episode_steps = 0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self._close_traci()
-        self._start_sumo()
-        self._setup_tls_program()
+        self.episode_steps = 0
+        restart = True
+        if self._started and self.soft_reset and self.conn is not None:
+            if not self._is_done():
+                restart = False
+        if restart:
+            self._close_traci()
+            self._start_sumo()
+            self._setup_tls_program()
+            self._started = True
 
         self.phase_elapsed = 0
         self.phase_target = 30
@@ -246,8 +261,11 @@ class PPOTransformerEnv(gym.Env):
         obs = self._build_observation()
         reward, info = self._compute_reward()
 
+        self.episode_steps += 1
         terminated = self._is_done()
         truncated = False
+        if not terminated and self.episode_horizon_steps and self.episode_steps >= self.episode_horizon_steps:
+            truncated = True
 
         return obs, reward, terminated, truncated, info
 
@@ -264,6 +282,12 @@ class PPOTransformerEnv(gym.Env):
         cmd = [binary, "-c", str(self.sumo_cfg)]
         if self.sim_end:
             cmd += ["--end", str(self.sim_end)]
+        if self.sumo_step_length:
+            cmd += ["--step-length", str(self.sumo_step_length)]
+        if self.sumo_threads:
+            cmd += ["--threads", str(self.sumo_threads)]
+        if self.sumo_extra_args:
+            cmd.extend([str(arg) for arg in self.sumo_extra_args])
         self._traci_label = f"ppo-env-{uuid.uuid4().hex}"
         port = self._get_free_port()
         self.traci.start(cmd, label=self._traci_label, port=port)
@@ -287,6 +311,7 @@ class PPOTransformerEnv(gym.Env):
             except Exception:
                 pass
             self._traci_label = None
+        self._started = False
 
     def _setup_tls_program(self):
         if self.conn is None:
@@ -415,10 +440,13 @@ class PPOTransformerEnv(gym.Env):
         obs_vec = []
         for approach in self.approach_order:
             counts = self.window_counts[approach]
+            car = self._apply_rfid_noise(counts.get("car", 0))
+            bus = self._apply_rfid_noise(counts.get("bus", 0))
+            ambulance = self._apply_rfid_noise(counts.get("ambulance", 0))
             obs_vec.extend([
-                float(counts.get("car", 0)),
-                float(counts.get("bus", 0)),
-                float(counts.get("ambulance", 0)),
+                float(car),
+                float(bus),
+                float(ambulance),
             ])
 
         obs_vec.extend(phase_one_hot)
@@ -431,6 +459,14 @@ class PPOTransformerEnv(gym.Env):
         self._reset_window_counts()
 
         return np.stack(self.obs_history).astype(np.float32)
+
+    def _apply_rfid_noise(self, count: int) -> int:
+        if self.rfid_noise_rate <= 0.0 or count <= 0:
+            return int(count)
+        rng = getattr(self, "np_random", None)
+        if rng is None:
+            rng = np.random.default_rng()
+        return int(rng.binomial(int(count), 1.0 - self.rfid_noise_rate))
 
     def _compute_reward(self) -> Tuple[float, Dict]:
         avg_queue = self.queue_accum / max(1, self.delta_time)

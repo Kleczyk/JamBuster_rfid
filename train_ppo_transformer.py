@@ -172,11 +172,24 @@ def main() -> int:
         stop["timesteps_total"] = args.stop_timesteps
 
     storage_path = str(Path(args.storage).resolve().as_uri())
+    config_dict = ppo_cfg.to_dict()
+    noisy_cfg = cfg.get("noisy_eval")
+    if noisy_cfg:
+        noisy_cfg = dict(noisy_cfg)
+        eval_config = dict(noisy_cfg.get("evaluation_config", {}))
+        eval_env_config = dict(eval_config.get("env_config", {}))
+        if eval_env_config:
+            eval_config["env_config"] = _resolve_sumo_cfg_path(eval_env_config)
+        eval_config.setdefault("explore", False)
+        if eval_config:
+            noisy_cfg["evaluation_config"] = eval_config
+        config_dict["noisy_eval"] = noisy_cfg
+
     tune.run(
         "PPO",
         name=args.name,
         stop=stop,
-        config=ppo_cfg.to_dict(),
+        config=config_dict,
         storage_path=storage_path,
     )
 

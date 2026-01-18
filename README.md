@@ -138,7 +138,8 @@ uv run python train_ppo_transformer.py \
 
 This baseline trains on `simulation.sumocfg` and periodically evaluates on
 `simulation_test.sumocfg` (different demand profile). Evaluation metrics are
-logged to TensorBoard under the `evaluation/` prefix.
+logged to TensorBoard under the `evaluation/` prefix. A second evaluation pass
+with RFID dropout noise (20%) is logged under `evaluation_noisy/`.
 
 ```bash
 uv run python train_ppo_transformer.py \

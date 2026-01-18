@@ -17,6 +17,7 @@ env_config:
   reward_alpha: 0.55
   reward_beta: 0.30
   reward_gamma: 0.15
+  rfid_noise_rate: 0.0
   episode_horizon_steps: 120
   soft_reset: true
 
@@ -72,6 +73,18 @@ evaluation:
     explore: false
     env_config:
       sumo_cfg: nets/ppo_transformer_intersection/simulation_test.sumocfg
+      rfid_noise_rate: 0.0
+
+noisy_eval:
+  interval: 1
+  duration: 5
+  duration_unit: episodes
+  num_env_runners: 1
+  evaluation_config:
+    explore: false
+    env_config:
+      sumo_cfg: nets/ppo_transformer_intersection/simulation_test.sumocfg
+      rfid_noise_rate: 0.2
 
 tune:
   metric: custom_metrics/delay_mean
