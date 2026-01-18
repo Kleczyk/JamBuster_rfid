@@ -24,16 +24,20 @@ def load_config(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def build_config(cfg: dict) -> PPOConfig:
-    env_name = cfg.get("env_name", "ppo_transformer_env")
-
-    env_config = cfg.get("env_config", {})
+def _resolve_sumo_cfg_path(env_config: dict) -> dict:
     sumo_cfg = env_config.get("sumo_cfg")
     if sumo_cfg:
         sumo_path = Path(sumo_cfg)
         if not sumo_path.is_absolute():
             sumo_path = (Path(__file__).resolve().parent / sumo_path).resolve()
         env_config["sumo_cfg"] = str(sumo_path)
+    return env_config
+
+
+def build_config(cfg: dict) -> PPOConfig:
+    env_name = cfg.get("env_name", "ppo_transformer_env")
+
+    env_config = _resolve_sumo_cfg_path(dict(cfg.get("env_config", {})))
 
     register_env(env_name, lambda env_cfg: PPOTransformerEnv(env_cfg))
     ModelCatalog.register_custom_model("ppo_transformer_model", PPOTransformerModel)
@@ -78,6 +82,34 @@ def build_config(cfg: dict) -> PPOConfig:
         "custom_model": cfg["model"].get("custom_model", "ppo_transformer_model"),
         "custom_model_config": cfg["model"].get("custom_model_config", {}),
     }
+
+    eval_cfg = cfg.get("evaluation")
+    if eval_cfg:
+        eval_cfg = dict(eval_cfg)
+        eval_config = dict(eval_cfg.get("evaluation_config", {}))
+        eval_env_config = dict(eval_config.get("env_config", {}))
+        if eval_env_config:
+            eval_config["env_config"] = _resolve_sumo_cfg_path(eval_env_config)
+        eval_config.setdefault("explore", False)
+
+        eval_args = {}
+        if eval_cfg.get("interval") is not None:
+            eval_args["evaluation_interval"] = eval_cfg.get("interval")
+        if eval_cfg.get("duration") is not None:
+            eval_args["evaluation_duration"] = eval_cfg.get("duration")
+        if eval_cfg.get("duration_unit") is not None:
+            eval_args["evaluation_duration_unit"] = eval_cfg.get("duration_unit")
+        if eval_cfg.get("num_env_runners") is not None:
+            eval_args["evaluation_num_env_runners"] = eval_cfg.get("num_env_runners")
+        if eval_cfg.get("num_envs_per_env_runner") is not None:
+            eval_args["evaluation_num_envs_per_env_runner"] = eval_cfg.get("num_envs_per_env_runner")
+        if eval_cfg.get("parallel_to_training") is not None:
+            eval_args["evaluation_parallel_to_training"] = eval_cfg.get("parallel_to_training")
+        if eval_config:
+            eval_args["evaluation_config"] = eval_config
+
+        if eval_args:
+            config = config.evaluation(**eval_args)
 
     return config
 

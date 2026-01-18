@@ -134,6 +134,17 @@ uv run python train_ppo_transformer.py \
   --config configs/ppo_transformer.yaml
 ```
 
+### Baseline train+test (periodic evaluation)
+
+This baseline trains on `simulation.sumocfg` and periodically evaluates on
+`simulation_test.sumocfg` (different demand profile). Evaluation metrics are
+logged to TensorBoard under the `evaluation/` prefix.
+
+```bash
+uv run python train_ppo_transformer.py \
+  --config configs/ppo_transformer_baseline.yaml
+```
+
 ### Hyperparameter tuning (Optuna + Ray Tune)
 
 Tune uses the `tune` section in `configs/ppo_transformer.yaml` for search space,
