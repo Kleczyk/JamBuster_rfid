@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <!-- RFID readers simulated as E1 induction loops on each incoming lane -->
+    <inductionLoop id="rfid_north_0" lane="north_to_center_0" pos="5.0" freq="1" file="rfid_loops.xml"/>
+    <inductionLoop id="rfid_north_1" lane="north_to_center_1" pos="5.0" freq="1" file="rfid_loops.xml"/>
+
+    <inductionLoop id="rfid_south_0" lane="south_to_center_0" pos="5.0" freq="1" file="rfid_loops.xml"/>
+    <inductionLoop id="rfid_south_1" lane="south_to_center_1" pos="5.0" freq="1" file="rfid_loops.xml"/>
+
+    <inductionLoop id="rfid_east_0" lane="east_to_center_0" pos="5.0" freq="1" file="rfid_loops.xml"/>
+    <inductionLoop id="rfid_east_1" lane="east_to_center_1" pos="5.0" freq="1" file="rfid_loops.xml"/>
+
+    <inductionLoop id="rfid_west_0" lane="west_to_center_0" pos="5.0" freq="1" file="rfid_loops.xml"/>
+    <inductionLoop id="rfid_west_1" lane="west_to_center_1" pos="5.0" freq="1" file="rfid_loops.xml"/>
+</additional>

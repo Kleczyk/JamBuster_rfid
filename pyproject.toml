@@ -3,16 +3,31 @@ name = "sumo_single_intersection"
 version = "0.1.0"
 description = "Configuration for training a PPO agent on a single traffic intersection using SUMO-RL, RLlib and Ray."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "sumo-rl>=1.4.5",  # SUMO RL environment for traffic signal control
-    "ray[rllib]>=2.7.0",  # RLlib and Tune for distributed training
-    "torch>=1.13.1",     # deep learning backend
-    "gymnasium>=0.28.0", # Gym API used by sumo-rl for single-agent envs
-    "pettingzoo>=1.23.0", # for parallel env wrapper (multi-agent)
-    "pandas>=1.5.0",     # optional logging
-    "numpy>=1.23.4",
-    "traci>=1.18.0"      # interface to the SUMO simulator
+    "ray[rllib,tune]>=2.10.0",  # RLlib + Tune for distributed training
+    "torch>=2.2.0",     # deep learning backend
+    "gymnasium>=0.29.0", # Gym API used by sumo-rl for single-agent envs
+    "pettingzoo>=1.24.0", # for parallel env wrapper (multi-agent)
+    "pandas>=2.1.0",     # optional logging
+    "numpy>=1.26.0",
+    "traci>=1.12.0",     # interface to the SUMO simulator
+    "python-docx>=1.1.0", # for reading and writing Word documents
+    "pymupdf>=1.23.0",    # for PDF to Markdown conversion
+    "requests>=2.31.0",   # for HTTP requests to kie.ai API
+    "pillow>=10.0.0",     # for image processing       # for async HTTP requests to kie.ai API
+    "httpx>=0.25.0",
+    "matplotlib>=3.10.8",
+    "scipy>=1.15.3",
+    "tensorboard>=2.15.0",
+    "optuna>=3.6.0",
+    "pyyaml>=6.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
 ]
 
 # uv-specific settings: limit concurrency for downloads to improve stability.

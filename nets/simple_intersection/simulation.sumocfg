@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- SUMO Configuration File for Simple 4-Way Intersection Simulation -->
+
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <!-- Network file with 4-way intersection -->
+        <net-file value="network.net.xml"/>
+        <!-- Routes and vehicle definitions -->
+        <route-files value="routes.rou.xml"/>
+    </input>
+
+    <output>
+        <!-- Trip information output -->
+        <tripinfo-output value="tripinfo.xml"/>
+        <!-- Summary statistics output -->
+        <summary-output value="summary.xml"/>
+        <!-- Verbose output for simulation statistics -->
+        <duration-log.statistics value="true"/>
+    </output>
+
+    <time>
+        <!-- Simulation start time -->
+        <begin value="0"/>
+        <!-- Simulation end time (1 hour = 3600 seconds) -->
+        <end value="3600"/>
+        <!-- Time step size in seconds -->
+        <step-length value="1.0"/>
+    </time>
+
+    <processing>
+        <!-- Collision detection -->
+        <collision.action value="warn"/>
+        <!-- Maximum teleport time -->
+        <time-to-teleport value="300"/>
+        <!-- Allow emergency vehicles to exceed speed limits -->
+        <emergencydecel.warning-threshold value="1.0"/>
+    </processing>
+
+    <routing>
+        <!-- Enable device for rerouting if needed -->
+        <device.rerouting.probability value="0.0"/>
+    </routing>
+
+    <report>
+        <!-- Show simulation progress -->
+        <verbose value="true"/>
+        <!-- Show warnings -->
+        <no-warnings value="false"/>
+        <!-- Log file -->
+        <log value="simulation.log"/>
+    </report>
+
+    <random>
+        <!-- Set random seed for reproducibility -->
+        <seed value="42"/>
+    </random>
+
+    <gui_only>
+        <!-- Settings that only apply when running with sumo-gui -->
+        <gui-settings-file value=""/>
+        <start value="true"/>
+        <quit-on-end value="false"/>
+    </gui_only>
+
+</configuration>
+

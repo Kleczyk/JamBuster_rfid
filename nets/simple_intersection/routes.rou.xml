@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Routes and vehicle definitions for simple 4-way intersection -->
+<!-- High traffic density: ~1200 vehicles/hour -->
+<!-- Mix: 80% cars, 15% buses, 5% ambulances -->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+    <!-- Vehicle Type Definitions -->
+    
+    <!-- Standard passenger car -->
+    <vType id="car" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5" length="5.0" minGap="2.5" maxSpeed="50.0" guiShape="passenger" color="1,1,0"/>
+    
+    <!-- City bus -->
+    <vType id="bus" vClass="bus" accel="1.2" decel="4.0" sigma="0.5" length="12.0" minGap="3.0" maxSpeed="30.0" guiShape="bus" color="0,0,1" personCapacity="85"/>
+    
+    <!-- Emergency ambulance -->
+    <vType id="ambulance" vClass="emergency" accel="2.9" decel="4.5" sigma="0.3" length="6.0" minGap="2.5" maxSpeed="50.0" speedFactor="1.5" guiShape="emergency" color="1,0,0"/>
+
+    <!-- Route Definitions -->
+    <!-- Routes from North -->
+    <route id="north_to_south" edges="north_to_center center_to_south"/>
+    <route id="north_to_east" edges="north_to_center center_to_east"/>
+    <route id="north_to_west" edges="north_to_center center_to_west"/>
+    
+    <!-- Routes from South -->
+    <route id="south_to_north" edges="south_to_center center_to_north"/>
+    <route id="south_to_east" edges="south_to_center center_to_east"/>
+    <route id="south_to_west" edges="south_to_center center_to_west"/>
+    
+    <!-- Routes from East -->
+    <route id="east_to_west" edges="east_to_center center_to_west"/>
+    <route id="east_to_north" edges="east_to_center center_to_north"/>
+    <route id="east_to_south" edges="east_to_center center_to_south"/>
+    
+    <!-- Routes from West -->
+    <route id="west_to_east" edges="west_to_center center_to_east"/>
+    <route id="west_to_north" edges="west_to_center center_to_north"/>
+    <route id="west_to_south" edges="west_to_center center_to_south"/>
+
+    <!-- Route Distributions (random turning with probabilities) -->
+    <routeDistribution id="rd_north">
+        <route edges="north_to_center center_to_south" probability="0.4"/>
+        <route edges="north_to_center center_to_east" probability="0.3"/>
+        <route edges="north_to_center center_to_west" probability="0.3"/>
+    </routeDistribution>
+
+    <routeDistribution id="rd_south">
+        <route edges="south_to_center center_to_north" probability="0.4"/>
+        <route edges="south_to_center center_to_east" probability="0.3"/>
+        <route edges="south_to_center center_to_west" probability="0.3"/>
+    </routeDistribution>
+
+    <routeDistribution id="rd_east">
+        <route edges="east_to_center center_to_west" probability="0.4"/>
+        <route edges="east_to_center center_to_north" probability="0.3"/>
+        <route edges="east_to_center center_to_south" probability="0.3"/>
+    </routeDistribution>
+
+    <routeDistribution id="rd_west">
+        <route edges="west_to_center center_to_east" probability="0.4"/>
+        <route edges="west_to_center center_to_north" probability="0.3"/>
+        <route edges="west_to_center center_to_south" probability="0.3"/>
+    </routeDistribution>
+
+    <!-- Traffic Flows (High Density) -->
+    <!-- Each direction generates ~300 vehicles/hour = 1200 total/hour -->
+    <!-- Mix: 80% cars, 15% buses, 5% ambulances -->
+
+    <!-- Flow from North -->
+    <flow id="flow_north_cars" type="car" begin="0" end="3600" vehsPerHour="240" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses" type="bus" begin="0" end="3600" vehsPerHour="45" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances" type="ambulance" begin="0" end="3600" vehsPerHour="15" route="rd_north" departLane="best" departSpeed="max"/>
+
+    <!-- Flow from South -->
+    <flow id="flow_south_cars" type="car" begin="0" end="3600" vehsPerHour="240" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses" type="bus" begin="0" end="3600" vehsPerHour="45" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances" type="ambulance" begin="0" end="3600" vehsPerHour="15" route="rd_south" departLane="best" departSpeed="max"/>
+
+    <!-- Flow from East -->
+    <flow id="flow_east_cars" type="car" begin="0" end="3600" vehsPerHour="240" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses" type="bus" begin="0" end="3600" vehsPerHour="45" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_ambulances" type="ambulance" begin="0" end="3600" vehsPerHour="15" route="rd_east" departLane="best" departSpeed="max"/>
+
+    <!-- Flow from West -->
+    <flow id="flow_west_cars" type="car" begin="0" end="3600" vehsPerHour="240" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses" type="bus" begin="0" end="3600" vehsPerHour="45" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_ambulances" type="ambulance" begin="0" end="3600" vehsPerHour="15" route="rd_west" departLane="best" departSpeed="max"/>
+
+</routes>
+

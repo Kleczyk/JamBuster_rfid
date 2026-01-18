@@ -1,0 +1,108 @@
+# PPO-Transformer configuration
+
+env_name: ppo_transformer_env
+
+env_config:
+  sumo_cfg: nets/ppo_transformer_intersection/simulation.sumocfg
+  use_gui: false
+  sumo_binary: sumo
+  delta_time: 5
+  yellow_time: 3
+  t_green_min: 10
+  t_green_max: 60
+  obs_window: 48
+  queue_speed_threshold: 0.1
+  tls_id: center
+  reward_alpha: 0.55
+  reward_beta: 0.30
+  reward_gamma: 0.15
+
+model:
+  custom_model: ppo_transformer_model
+  custom_model_config:
+    d_model: 64
+    nhead: 4
+    num_layers: 2
+    ff_dim: 128
+    dropout: 0.1
+
+training:
+  lr: 3.0e-4
+  gamma: 0.99
+  lambda_: 0.95
+  clip_param: 0.2
+  train_batch_size: 16000
+  minibatch_size: 512
+  num_epochs: 10
+  entropy_coeff: 0.0
+  vf_loss_coeff: 1.0
+
+rollout:
+  num_env_runners: 16
+  num_envs_per_env_runner: 1
+  rollout_fragment_length: 1000
+  batch_mode: truncate_episodes
+
+resources:
+  num_gpus: 1
+
+stopping:
+  timesteps_total: 200000
+
+logging:
+  log_level: INFO
+
+tune:
+  metric: custom_metrics/delay_mean
+  mode: min
+  tensorboard_hparams: true
+  num_samples: 100
+  max_concurrent_trials: 4
+  stop_timesteps: 200000
+  config_overrides:
+    rollout_fragment_length: auto
+  search_space:
+    training:
+      lr:
+        type: loguniform
+        low: 1.0e-5
+        high: 5.0e-4
+      clip_param:
+        type: uniform
+        low: 0.1
+        high: 0.3
+      entropy_coeff:
+        type: uniform
+        low: 0.0
+        high: 0.02
+      lambda_:
+        type: uniform
+        low: 0.85
+        high: 0.99
+      train_batch_size:
+        type: choice
+        values: [8000, 12000, 16000, 24000]
+      minibatch_size:
+        type: choice
+        values: [256, 512, 1024]
+      num_epochs:
+        type: choice
+        values: [5, 10, 15]
+    model:
+      custom_model_config:
+        d_model:
+          type: choice
+          values: [48, 64, 96]
+        nhead:
+          type: choice
+          values: [2, 4, 8]
+        num_layers:
+          type: choice
+          values: [1, 2, 3]
+        ff_dim:
+          type: choice
+          values: [128, 192, 256]
+        dropout:
+          type: uniform
+          low: 0.0
+          high: 0.2
