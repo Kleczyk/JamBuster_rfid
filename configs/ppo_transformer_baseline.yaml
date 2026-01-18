@@ -62,7 +62,7 @@ logging:
   log_level: INFO
 
 evaluation:
-  interval: 5
+  interval: 1
   duration: 5
   duration_unit: episodes
   num_env_runners: 1
@@ -77,13 +77,14 @@ tune:
   metric: custom_metrics/delay_mean
   mode: min
   tensorboard_hparams: true
-  num_samples: 1000
-  max_concurrent_trials: 4
+  num_samples: 20
+  max_concurrent_trials: 20
   stop_timesteps: 200000
   config_overrides:
     rollout_fragment_length: auto
-    num_gpus: 1
-    num_env_runners: 27
+    num_gpus: 0.2
+    num_cpus: 11
+    num_env_runners: 6
     num_envs_per_env_runner: 1
     env_config:
       sumo_threads: 2
