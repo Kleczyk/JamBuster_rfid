@@ -92,6 +92,14 @@ def _apply_ray_env(cfg: dict) -> None:
         os.environ["RAY_memory_monitor_refresh_ms"] = str(int(refresh_ms))
 
 
+def _get_shm_size_bytes() -> int | None:
+    try:
+        stats = os.statvfs("/dev/shm")
+    except FileNotFoundError:
+        return None
+    return int(stats.f_frsize * stats.f_blocks)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/ppo_transformer.yaml", help="Config YAML")
@@ -108,6 +116,14 @@ def main() -> int:
     object_store_bytes = None
     if object_store_gb is not None:
         object_store_bytes = int(float(object_store_gb) * 1024**3)
+    shm_size = _get_shm_size_bytes()
+    if object_store_bytes is not None and shm_size is not None and object_store_bytes > shm_size:
+        capped = int(shm_size * 0.8)
+        print(
+            f"[ray] object_store_memory capped to {capped / 1024**3:.2f} GB "
+            f"to fit /dev/shm size {shm_size / 1024**3:.2f} GB."
+        )
+        object_store_bytes = capped
     ray.init(
         num_cpus=resources_cfg.get("num_cpus"),
         num_gpus=resources_cfg.get("num_gpus"),
