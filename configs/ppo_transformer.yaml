@@ -44,7 +44,13 @@ rollout:
   batch_mode: truncate_episodes
 
 resources:
+  num_cpus: 220
   num_gpus: 1
+  object_store_memory_gb: 40
+
+ray:
+  memory_usage_threshold: 0.90
+  memory_monitor_refresh_ms: 1000
 
 stopping:
   timesteps_total: 200000

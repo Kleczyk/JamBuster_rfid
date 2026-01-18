@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import ray
@@ -52,6 +53,16 @@ def _deep_update(target: dict, updates: dict) -> dict:
     return target
 
 
+def _apply_ray_env(cfg: dict) -> None:
+    ray_cfg = cfg.get("ray", {})
+    threshold = ray_cfg.get("memory_usage_threshold")
+    if threshold is not None:
+        os.environ["RAY_memory_usage_threshold"] = str(threshold)
+    refresh_ms = ray_cfg.get("memory_monitor_refresh_ms")
+    if refresh_ms is not None:
+        os.environ["RAY_memory_monitor_refresh_ms"] = str(int(refresh_ms))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/ppo_transformer.yaml", help="Config YAML")
@@ -66,7 +77,17 @@ def main() -> int:
 
     cfg = load_config(Path(args.config))
     tune_cfg = cfg.get("tune", {})
-    ray.init()
+    _apply_ray_env(cfg)
+    resources_cfg = cfg.get("resources", {})
+    object_store_gb = resources_cfg.get("object_store_memory_gb")
+    object_store_bytes = None
+    if object_store_gb is not None:
+        object_store_bytes = int(float(object_store_gb) * 1024**3)
+    ray.init(
+        num_cpus=resources_cfg.get("num_cpus"),
+        num_gpus=resources_cfg.get("num_gpus"),
+        object_store_memory=object_store_bytes,
+    )
 
     num_samples = args.num_samples or int(tune_cfg.get("num_samples", 100))
     max_concurrent = args.max_concurrent or int(tune_cfg.get("max_concurrent_trials", 4))
