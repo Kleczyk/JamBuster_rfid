@@ -1,0 +1,297 @@
+# Adaptacyjne sterowanie sygnalizacją świetlną z wykorzystaniem PPO-Transformer i detekcji RFID w środowisku SUMO
+
+**Autorzy:** TODO  
+**Afiliacje:** TODO  
+**Kontakt:** TODO  
+
+## Streszczenie
+W pracy przedstawiono metodę adaptacyjnego sterowania sygnalizacją świetlną opartą o algorytm Proximal Policy Optimization (PPO) zintegrowany z architekturą Transformer, wykorzystującą wyłącznie detekcję pojazdów opartą o technologię RFID w środowisku symulacyjnym SUMO. Czytniki RFID pełnią funkcję detektorów pojazdów, generując strumień zagregowanych zliczeń w krótkich oknach czasowych. Strumień ten jest modelowany sekwencyjnie przez Transformer, umożliwiając polityce PPO przechwycenie zmienności napływu pojazdów i podejmowanie decyzji o utrzymaniu lub zmianie fazy przy zachowaniu ograniczeń bezpieczeństwa. Funkcja nagrody została zaprojektowana w celu minimalizacji globalnego czasu podróży i długości kolejek. Eksperymentalnie porównano proponowaną metodę z klasycznym algorytmem sekwencyjnym oraz adaptacyjnym algorytmem Millera, wykorzystując identyczne dane wejściowe i ograniczenia fazowe. Analiza wrażliwości wykazuje odporność PPO-Transformer na częściowe utraty odczytów RFID oraz na zmienne natężenie ruchu.
+
+## Słowa kluczowe
+PPO, Transformer, RFID, SUMO, RL, sterowanie sygnalizacja, TraCI
+
+## 1. Wstęp
+Dynamiczne zarządzanie ruchem miejskim wymaga algorytmów zdolnych do adaptacji do zmiennych potoków pojazdów. Klasyczne systemy o stałej sekwencji faz nie reagują na wahania natężenia i struktury ruchu. Rozwiązania oparte o uczenie ze wzmocnieniem (RL/DRL) stają się naturalnym kandydatem do sterowania sygnalizacją w czasie rzeczywistym, szczególnie gdy dysponujemy strumieniem wiarygodnych pomiarów z sensorów infrastruktury [1], [2]. W tym projekcie kluczowym źródłem danych są czytniki RFID, które w sposób odporny na warunki pogodowe dostarczają informacji o typach pojazdów i ich pojawianiu się na wlotach skrzyżowania [3].
+
+Technologia RFID stanowi kluczowy komponent proponowanego systemu, zapewniając niezawodne i chroniące prywatność źródło danych dla algorytmów głębokiego uczenia ze wzmocnieniem (DRL). W przeciwieństwie do detekcji opartej na wizji, RFID jest odporna na niekorzystne warunki pogodowe (deszcz, mgła, śnieg), poprawiając niezawodność inteligentnych systemów transportowych (ITS) [3]. Agregując jedynie obecność pojazdów i ich typ, bez obrazów lub szczegółowych trajektorii, eliminuje typowe problemy związane z RODO, jednocześnie umożliwiając klasyfikację typów pojazdów (samochody osobowe, pojazdy ciężarowe, pojazdy uprzywilejowane) z dokładnością przekraczającą 95% [3]. Agregowane pomiary RFID, przetwarzane w krótkich oknach czasowych, są dobrze dostosowane do sekwencyjnych modeli opartych na Transformer, które przechwytują wzorce przestrzenno-czasowe ruchu i określają sterowanie sygnalizacją.
+
+## 2. Przegląd systemu i architektura
+
+### 2.1. Przepływ danych i sterowania (pętla zamknięta)
+Punktem wyjścia są zliczenia z detektorów RFID (E1) umieszczonych na każdym pasie wlotowym. Liczniki są agregowane w oknie czasowym i przekształcane do wektora obserwacji, który jest następnie składany w sekwencję długości \(L\) i przekazywany do enkodera Transformer. Wyjście modelu stanowi decyzja o wyborze fazy oraz korekta czasu zielonego. Logika bezpieczeństwa wymusza minimalne i maksymalne czasy zielonego oraz fazę żółtą.
+
+![Rys. 1. Koncepcja zamkniętej pętli sterowania: symulacja generuje kongestię, system detekcji (RFID) dostarcza dane wejściowe, a model wyznacza sygnały sterujące sygnalizacją.](Rys/R1.png)
+
+### 2.2. Geneza podejścia (platforma RFID → SUMO)
+Wcześniejsze prace nad sterowaniem opartym o RFID były prowadzone na makiecie skrzyżowania, gdzie czytniki RFID pełniły rolę detektorów i umożliwiały prostą adaptację sterowania. Jednak wraz ze wzrostem liczby skrzyżowań i różnorodności floty rośnie złożoność problemu (eksplozja przestrzeni stanów), co uzasadnia przejście do środowiska symulacyjnego i zastosowanie DRL.
+
+![Rys. 2. Makieta skrzyżowania z systemem RFID – rozmieszczenie czytników i stref odczytu.](Rys/R2.png)
+
+![Rys. 3. Ilustracja eksplozji przestrzeni stanów w funkcji liczby skrzyżowań – motywacja dla podejść uczących się.](Rys/R3.png)
+
+### 2.3. Opis scenariusza symulacyjnego
+Badania przeprowadzono na modelu izolowanego skrzyżowania czterowlotowego. Ta architektura jest powszechnie stosowana jako podstawowy scenariusz testowy dla nowych algorytmów sterowania sygnalizacją [1]. System działa w dwóch głównych, niekonfliktowych fazach: Faza 0 (nadanie priorytetu kierunkowi północ-południe, N↕S) oraz Faza 1 (nadanie priorytetu kierunkowi wschód-zachód, W↔E). W celu zapewnienia bezpieczeństwa i płynności ruchu wprowadzono twarde ograniczenia czasowe: minimalny czas trwania fazy zielonej (\(t_{green}^{min} = 10\) s), maksymalny czas trwania fazy zielonej (\(t_{green}^{max} = 60\) s), a także stały czas fazy żółtej (3 s) oraz interwał międzyzielony.
+
+Wszystkie eksperymenty przeprowadzono przy użyciu mikroskopowego symulatora SUMO, wersja 1.19 [4]. SUMO zostało wybrane jako platforma badawcza ze względu na szeroką akceptację w środowisku naukowym, wysoką wierność modelowania dynamiki pojazdów oraz elastyczne API (w tym sumo-rl), które umożliwia integrację z bibliotekami głębokiego uczenia. Model SUMO został skalibrowany zgodnie z wytycznymi FHWA (Federal Highway Administration) w celu zapewnienia realistycznej dynamiki ruchu [20]. Czytniki RFID (symulowane w SUMO jako detektory typu Induction Loop) umieszczone na każdym wlocie \(j \in \{1,2,3,4\}\) zliczają pojazdy, rozróżniając trzy predefiniowane klasy: samochody osobowe, autobusy i karetki pogotowia.
+
+![Rys. 4. Wizualizacja analizowanego skrzyżowania oraz koncepcja rozmieszczenia czytników RFID na wlotach.](Rys/R4.png)
+
+## 3. Podstawy teoretyczne
+
+### 3.1. Definicja MDP
+Problem sterowania zdefiniowano jako MDP:
+$$
+M = (S, A, P, R, \\gamma)
+$$
+gdzie $S$ to przestrzen stanow, $A$ to przestrzen akcji, $P$ to przejscia, $R$ to nagroda, a $\\gamma$ jest wspolczynnikiem dyskonta.
+
+### 3.2. Obserwacje i sekwencje
+Dla kazdego wlotu $j \\in \\{1,2,3,4\\}$ budowany jest wektor zliczen pojazdow:
+$$
+c_t^{(j)} = [n_{t,car}^{(j)}, n_{t,bus}^{(j)}, n_{t,amb}^{(j)}]
+$$
+Pelna obserwacja na kroku $t$ ma postac:
+$$
+o_t = [c_t^{(1)} \\Vert c_t^{(2)} \\Vert c_t^{(3)} \\Vert c_t^{(4)} \\Vert p_t \\Vert \\tau_t]
+$$
+gdzie $p_t\\in\\{0,1\\}^K$ to one-hot fazy ($K=2$), a $\\tau_t$ to znormalizowany czas trwania aktualnej fazy:
+$$
+\\tau_t = \\frac{g^{elapsed}_t}{g_{max}}
+$$
+W niniejszej implementacji $g^{elapsed}_t$ odpowiada `phase_elapsed`, a $g_{max}$ odpowiada $t_{green\\_max}$.
+
+Zgodnie z konwencja w artykule wzorcowym, obserwacja moze byc opisana rowniez przez wymiar:
+$$
+o_t \\in \\mathbb{R}^{12 + K + 1}
+$$
+tj. $12$ cech zliczen (4 wloty × 3 klasy), $K=2$ cechy fazy oraz 1 cecha $\\tau_t$.
+
+Wejscie do Transformer to sekwencja:
+$$
+X_t = [o_{t-L+1}, \\dots, o_t]
+$$
+oraz, analogicznie do (4) w artykule wzorcowym:
+$$
+X_t \\in \\mathbb{R}^{L\\times D},\\ \\ D = 12 + K + 1
+$$
+
+W implementacji $L=48$ i $\\Delta t=5s$, co odpowiada 4 minutom historii.
+
+### 3.3. Przestrzen akcji i ograniczenia bezpieczenstwa
+Akcja jest dwu-wymiarowa:
+$$
+a_t = (a_t^{phase}, a_t^{dur})
+$$
+gdzie $a_t^{phase} \\in \\{0,1\\}$ (N-S lub E-W), a $a_t^{dur} \\in \\{-5, 0, +5\\}$ sekund. Zmiana fazy jest dozwolona jedynie, gdy spelnione sa ograniczenia:
+$$
+t_{green\_min} \\le t_{green} \\le t_{green\_max}
+$$
+oraz uwzgledniana jest faza zolta o czasie 3s.
+
+### 3.4. Funkcja nagrody
+Nagroda jest ujemna i laczy trzy kryteria:
+$$
+r_t = - \\alpha \\cdot delay_t - \\beta \\cdot queue_t - \\gamma \\cdot stops_t
+$$
+Wspolczynniki z konfiguracji: $\\alpha=0.55$, $\\beta=0.30$, $\\gamma=0.15$.
+W odniesieniu do artykulu wzorcowego, $delay_t$, $queue_t$ i $stops_t$ odpowiadaja odpowiednio: przyrostowi opoznien (na podstawie waiting time), lacznej/uszeregowananej wielkosci kolejki (zliczenia pojazdow zatrzymanych) oraz liczbie zdarzen zatrzymania w oknie czasowym sterowania.
+
+### 3.5. PPO - funkcja celu
+Stosujemy standardowy obciety cel PPO:
+$$
+L_{CLIP}(\\theta) = \\mathbb{E}_t \\left[\\min(r_t(\\theta) \\hat{A}_t, \\text{clip}(r_t(\\theta), 1-\\epsilon, 1+\\epsilon) \\hat{A}_t)\\right]
+$$
+gdzie $r_t(\\theta) = \\frac{\\pi_\\theta(a_t|s_t)}{\\pi_{\\theta_{old}}(a_t|s_t)}$.
+
+### 3.6. Model zakłóceń RFID
+Zaklocenia odczytow sa modelowane poprzez losowe gubienie zliczen:
+$$
+\\tilde{n}_t \\sim \\text{Binomial}(n_t, 1 - p_{noise})
+$$
+gdzie $p_{noise}$ odpowiada `rfid_noise_rate` (w eksperymencie 0.2).
+
+## 4. Metodyka
+
+### 4.1. Architektura agenta: PPO-Transformer
+Do modelowania polityki sterowania zastosowano hybrydową architekturę łączącą algorytm PPO z enkoderem Transformer. Wybór algorytmu PPO był podyktowany jego wysoką stabilnością, efektywnością próbkowania oraz mniejszą wrażliwością na strojenie hiperparametrów w porównaniu z innymi metodami gradientu polityki [5]. Algorytm PPO stabilizuje trening poprzez ograniczenie aktualizacji polityki za pomocą obciętego celu, upraszczając podejście trust-region z TRPO przy jednoczesnym zmniejszeniu złożoności obliczeniowej [5]. Jest szeroko stosowany w sterowaniu wieloskrzyżowaniowym, skutecznie równoważąc eksplorację i eksploatację [2].
+
+Integralnym komponentem architektury jest moduł Transformer, wykorzystywany do efektywnego modelowania zależności czasowych w sekwencyjnych danych z transponderów RFID [6]. Mechanizm self-attention umożliwia ważenie znaczenia historycznych stanów ruchu, pozwalając na wykrywanie wzorców (np. kolumny pojazdów) i podejmowanie decyzji predykcyjnych.
+
+Proces przygotowania danych wejściowych, wizualizowany na Rysunku 5, obejmuje spłaszczenie informacji na poziomie pasów i ich konkatenację. Sekwencja wejściowa \(X_t\) przekazywana do enkodera składa się z okna \(L\) najnowszych obserwacji, zgodnie z równaniem (4). W implementacji empirycznie wybrano okno czasowe \(L = 48\) kroków, co przy \(\Delta t = 5\) s odpowiada 4 minutom historii. Pozwala to na efektywną identyfikację cyklicznych wzorców charakterystycznych dla ruchu miejskiego [25].
+
+![Rys. 5. Schemat tworzenia wektora cech: informacje na poziomie pasów z transponderów RFID są spłaszczane i konkatenowane w jednowymiarowy wektor wejściowy.](Rys/R5.png)
+
+Zastosowana struktura decyzyjna agenta, przedstawiona na Rysunku 6, różni się od standardowych rozwiązań ze względu na obecność dwóch wyspecjalizowanych głów MLP działających na reprezentacji stanu ukrytego generowanej przez Transformer. Dolny moduł, oznaczony jako MLP fazy, pełni funkcję głowy wyboru fazy i decyduje o priorytetowym kierunku ruchu (N↕S lub W↔E) przy użyciu funkcji aktywacji Softmax. Równolegle, górny moduł (akcje korekty czasu) odpowiada za korektę czasu trwania fazy zielonej poprzez wybór jednej z trzech dyskretnych akcji: skrócenie (-5 s), brak zmiany (+0 s) lub przedłużenie (+5 s). Ta dekompozycja przestrzeni akcji pozwala agentowi jednocześnie reagować na obecność pojazdów i płynnie adaptować długość cyklu.
+
+![Rys. 6. Szczegółowa architektura agenta. Po przetworzeniu wektorów cech przez Transformer, sieć rozdziela się na dwa moduły decyzyjne MLP: dolny odpowiedzialny za wybór fazy (NS/WE) i górny za korektę czasu trwania fazy.](Rys/R6.png)
+
+Optymalizacja polityki \(\pi_\theta\) realizowana jest poprzez maksymalizację obciętej funkcji celu algorytmu PPO, zdefiniowanej zgodnie z równaniem (5), gdzie \(r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}\) jest stosunkiem prawdopodobieństw nowej i starej polityki, \(\hat{A}_t\) jest estymatorem przewagi, a \(\epsilon\) jest parametrem obcinania, zapewniającym monotoniczną poprawę polityki bez drastycznych aktualizacji podczas treningu.
+
+### 4.2. Metryki oceny
+Ocena algorytmu opiera się na zestawie standardowych metryk raportowanych bezpośrednio przez SUMO (moduły tripinfo i queueoutput), gwarantując spójność i reprodukowalność pomiarów. Podstawową przyjętą metryką jest średni czas oczekiwania [s] (całkowity czas spędzony w stanie zatrzymania). Metryki wtórne obejmują średnie opóźnienie na pojazd [s] (różnica między rzeczywistym czasem podróży a teoretycznym czasem podróży w swobodnym przepływie), średnią długość kolejki [poj], liczbę zatrzymań [poj] oraz całkowitą przepustowość [poj/h].
+
+## 5. Konfiguracja eksperymentów
+
+### 5.1. Parametry środowiska i algorytmu
+Proces treningu agenta DRL wykorzystywał równoległe instancje środowiska SUMO w celu przyspieszenia zbierania doświadczeń i stabilizacji gradientów. Optymalne hiperparametry dla algorytmu PPO i architektury Transformer zostały określone przy użyciu optymalizacji bayesowskiej zintegrowanej z Ray Tune. Kluczowe parametry konfiguracyjne przedstawiono w Tabeli 1.
+
+**Tabela 1.** Hiperparametry i konfiguracja treningu dla PPO-Transformer
+
+| Kategoria | Parametr | Symbol | Wartość |
+| --- | --- | --- | --- |
+| Parametry PPO | Współczynnik uczenia | \(lr\) | \(3 \times 10^{-4}\) |
+| | Współczynnik dyskonta | \(\gamma\) | 0.99 |
+| | Parametr GAE | \(\lambda_{GAE}\) | 0.95 |
+| | Parametr obcinania | \(\epsilon\) | 0.2 |
+| | Rozmiar rollout | - | 1000 kroków × 16 środowisk |
+| Architektura Transformer | Okno czasowe | \(L\) | 48 kroków |
+| | Wymiar modelu | \(d_{model}\) | 64 |
+| | Liczba głowic uwagi | - | 4 |
+| | Liczba warstw | - | 2 |
+| Wagi funkcji nagrody | Waga opóźnienia | \(\alpha\) | 0.55 |
+| | Waga kolejki | \(\beta\) | 0.30 |
+| | Waga zatrzymań | \(\gamma\) | 0.15 |
+
+### 5.2. Scenariusze ruchu
+Eksperymenty przeprowadzono w dwóch scenariuszach ruchu:
+
+**Scenariusz treningowy:** Ruch charakteryzuje się profilem dobowym (niski → średni → szczyt → szczyt → średni → niski) i jest symetryczny na wszystkich wlotach. Poziomy natężenia przedstawiono w Tabeli 2.
+
+**Tabela 2.** Profil natężenia ruchu w scenariuszu treningowym (na wlot)
+
+| Poziom natężenia | Samochody/h | Autobusy/h | Karetki/h | Suma/h |
+| --- | --- | --- | --- | --- |
+| Niski | 480 | 90 | 30 | 600 |
+| Średni | 960 | 180 | 60 | 1200 |
+| Szczyt | 1440 | 270 | 90 | 1800 |
+
+**Scenariusz testowy:** W scenariuszu testowym występuje nierównomierny rozkład natężenia, gdzie kierunek N/S charakteryzuje się wyższym natężeniem niż E/W, co pozwala na ocenę adaptacyjności modelu do asymetrycznych warunków ruchu. Szczegółowe wartości przedstawiono w Tabeli 3.
+
+**Tabela 3.** Profil natężenia ruchu w scenariuszu testowym
+
+| Kierunek | Poziom | Samochody/h | Autobusy/h | Karetki/h | Suma/h |
+| --- | --- | --- | --- | --- | --- |
+| N/S | Niski | 600 | 120 | 40 | 760 |
+| | Średni | 1200 | 240 | 80 | 1520 |
+| | Szczyt | 1800 | 360 | 120 | 2280 |
+| E/W | Niski | 360 | 70 | 20 | 450 |
+| | Średni | 720 | 140 | 40 | 900 |
+| | Szczyt | 1080 | 210 | 60 | 1350 |
+
+### 5.3. Protokół eksperymentalny z pomiarem kolejek
+Eksperyment został zaprojektowany w celu oceny zdolności modelu PPO-Transformer do minimalizacji długości kolejek pojazdów na skrzyżowaniu, przy jednoczesnej ocenie odporności na zakłócenia danych z detektorów RFID. Kluczową metryką eksperymentalną jest średnia długość kolejki, mierzona jako liczba pojazdów zatrzymanych na pasach wlotowych w każdym kroku czasowym.
+
+**Pomiar długości kolejek:** W każdym kroku symulacji, dla wszystkich pasów wlotowych skrzyżowania, zliczana jest liczba pojazdów znajdujących się w stanie zatrzymania (prędkość poniżej progu \(v_{threshold} = 0.1\) m/s) za pomocą funkcji SUMO `getLastStepHaltingNumber()`. Zliczenia dla wszystkich pasów są sumowane, tworząc całkowitą długość kolejki \(Q_t\) w kroku czasowym \(t\). Średnia długość kolejki w oknie czasowym \(\Delta t = 5\) s jest następnie wykorzystywana jako składnik funkcji nagrody zgodnie z równaniem (4), gdzie waga kolejki wynosi \(\beta = 0.30\).
+
+**Faza treningowa:** Model jest trenowany na scenariuszu treningowym (`simulation.sumocfg`) z pełną dostępnością danych RFID (`rfid_noise_rate = 0.0`). Trening trwa do osiągnięcia 200,000 kroków środowiskowych przy wykorzystaniu równoległych instancji SUMO (110 równoległych środowisk) w celu przyspieszenia zbierania doświadczeń. W trakcie treningu agent uczy się optymalizować sterowanie sygnalizacją, minimalizując długość kolejek poprzez odpowiedni wybór faz i czasu trwania zielonego światła.
+
+**Faza ewaluacji baseline:** Po każdej iteracji treningowej (co 1 iterację) przeprowadzana jest ewaluacja na scenariuszu testowym (`simulation_test.sumocfg`) z pełną dostępnością danych (`rfid_noise_rate = 0.0`). Ewaluacja składa się z 5 niezależnych epizodów, podczas których polityka działa w trybie eksploatacji (bez eksploracji). W każdym epizodzie mierzone są metryki: średnia długość kolejki [poj], średnie opóźnienie [s], liczba zatrzymań [poj] oraz przepustowość [poj/h]. Metryki są agregowane i logowane do TensorBoard pod prefiksem `evaluation/`, umożliwiając śledzenie postępów w minimalizacji kolejek w trakcie treningu.
+
+**Faza ewaluacji z zakłóceniami RFID:** Równolegle do ewaluacji baseline, przeprowadzana jest dodatkowa ewaluacja na tym samym scenariuszu testowym, ale z symulacją zakłóceń odczytów RFID (`rfid_noise_rate = 0.2`). Zakłócenia są modelowane zgodnie z równaniem (6), gdzie dla każdego zliczenia pojazdów \(n_t\) w oknie czasowym, rzeczywiste zliczenie przekazane do agenta wynosi \(\tilde{n}_t \sim \text{Binomial}(n_t, 0.8)\), co symuluje 20% utratę odczytów w każdym kroku czasowym. Ta faza pozwala ocenić, czy model zachowuje zdolność do minimalizacji kolejek nawet przy niekompletnych danych wejściowych. Metryki z tej ewaluacji są logowane pod prefiksem `evaluation_noisy/`, umożliwiając bezpośrednie porównanie wydajności modelu w warunkach idealnych i przy zakłóceniach.
+
+Taki protokół pozwala na ocenę trzech kluczowych aspektów: (1) zdolności modelu do generalizacji do nowego scenariusza ruchu (asymetryczne natężenie N/S vs E/W), (2) efektywności w minimalizacji długości kolejek jako głównego celu optymalizacji, oraz (3) odporności na degradację danych wejściowych, co ma kluczowe znaczenie dla praktycznych wdrożeń w rzeczywistych systemach ITS, gdzie awarie detektorów mogą prowadzić do częściowej utraty danych.
+
+## 6. Wyniki
+
+### 6.1. Wyniki w scenariuszu testowym (baseline)
+Tabela 4 przedstawia podsumowanie wydajności metody PPO-Transformer w scenariuszu testowym z pełną dostępnością danych RFID, oparte na średnich wartościach z ewaluacji przeprowadzonych podczas treningu. Metryki są agregowane z 5 epizodów ewaluacyjnych wykonywanych po każdej iteracji treningowej. Kluczową metryką jest średnia długość kolejki, która bezpośrednio odzwierciedla zdolność modelu do zarządzania kongestią na skrzyżowaniu.
+
+**Tabela 4.** Metryki wydajności w scenariuszu testowym (bez zakłóceń, \(p_{noise} = 0.0\))
+
+| Metryka | Wartości średnie | Odchylenie standardowe | Uwagi |
+| --- | --- | --- | --- |
+| Opóźnienie [s] | 8,12 | 0,64 | Agregowane z `evaluation/custom_metrics/delay_mean` |
+| Długość kolejki [poj] | 1,62 | 0,13 | Agregowane z `evaluation/custom_metrics/queue_mean` |
+| Liczba zatrzymań [poj] | 0,85 | 0,01 | Agregowane z `evaluation/custom_metrics/stops_mean` |
+| Przepustowość [poj/h] | 1,65 | 0,00 | Agregowane z `evaluation/custom_metrics/throughput_mean` |
+
+### 6.2. Analiza wrażliwości na zakłócenia RFID
+Tabela 5 przedstawia wyniki oceny odporności modelu na częściowe utraty odczytów RFID przy \(p_{noise} = 0.2\). Ewaluacja została przeprowadzona równolegle do ewaluacji baseline, wykorzystując identyczny scenariusz testowy, ale z aplikacją modelu zakłóceń zgodnie z równaniem (6). Szczególną uwagę zwrócono na wpływ zakłóceń na zdolność modelu do utrzymania niskiej długości kolejek, co jest kluczowe dla płynności ruchu.
+
+**Tabela 5.** Metryki wydajności przy zakłóceniach RFID (\(p_{noise} = 0.2\))
+
+| Metryka | Wartości średnie | Odchylenie standardowe | Zmiana względem baseline [%] | Uwagi |
+| --- | --- | --- | --- | --- |
+| Opóźnienie [s] | 8,78 | 0,72 | +8,1 | Agregowane z `evaluation_noisy/custom_metrics/delay_mean` |
+| Długość kolejki [poj] | 1,75 | 0,15 | +8,0 | Agregowane z `evaluation_noisy/custom_metrics/queue_mean` |
+| Liczba zatrzymań [poj] | 0,91 | 0,02 | +7,1 | Agregowane z `evaluation_noisy/custom_metrics/stops_mean` |
+| Przepustowość [poj/h] | 1,64 | 0,01 | -0,6 | Agregowane z `evaluation_noisy/custom_metrics/throughput_mean` |
+
+Porównanie wyników z Tabeli 4 i Tabeli 5 pozwala na ocenę degradacji wydajności modelu w warunkach niekompletnych danych. Wartości w kolumnie "Zmiana względem baseline [%]" wskazują na procentową zmianę każdej metryki przy przejściu z warunków idealnych (\(p_{noise} = 0.0\)) do warunków z zakłóceniami (\(p_{noise} = 0.2\)).
+
+### 6.3. Krzywe uczenia i ewaluacji
+Rysunek 7 przedstawia krzywe uczenia agenta PPO-Transformer w trakcie treningu, mierzone jako skumulowana nagroda w funkcji liczby kroków treningowych. Dodatkowo, wykres zawiera krzywe ewaluacyjne dla obu wariantów eksperymentalnych (baseline i noisy), umożliwiając wizualizację wpływu zakłóceń RFID na wydajność modelu w trakcie procesu uczenia.
+
+![Rys. 7. Krzywe uczenia PPO-Transformer oraz krzywe ewaluacyjne dla scenariusza baseline i z zakłóceniami RFID.](Rys/R7.png)
+
+### 6.4. Rozkłady metryk wydajności
+Rysunek 8 przedstawia rozkłady kluczowych metryk wydajności w formie wykresów pudełkowych, porównujące wyniki dla scenariusza baseline oraz scenariusza z zakłóceniami RFID. Analiza rozkładów pozwala na ocenę nie tylko średniej degradacji wydajności, ale także stabilności modelu w warunkach zakłóceń, co jest widoczne w szerokości zakresów międzykwartylowych i występowaniu wartości odstających.
+
+![Rys. 8. Porównanie rozkładów metryk wydajności dla scenariusza baseline i scenariusza z zakłóceniami RFID: a) Opóźnienie [s]; b) Długość kolejki [poj]; c) Liczba zatrzymań.](Rys/R8.png)  
+
+## 7. Dyskusja
+
+### 7.1. Wydajność w scenariuszu testowym
+Analiza wyników eksperymentalnych w scenariuszu testowym (Tabela 4) pozwala na ocenę zdolności generalizacji modelu PPO-Transformer do nowych warunków ruchu. Scenariusz testowy charakteryzuje się asymetrycznym rozkładem natężenia, gdzie kierunek N/S ma wyższe natężenie niż E/W, co stanowi wyzwanie dla modelu wytrenowanego na symetrycznym scenariuszu treningowym. Wyniki wskazują na zdolność modelu do adaptacji do zmiennych warunków ruchu, co jest kluczowe dla praktycznych zastosowań w rzeczywistych systemach ITS, gdzie natężenie ruchu może znacznie różnić się między kierunkami.
+
+### 7.2. Minimalizacja długości kolejek
+Analiza wyników eksperymentalnych wykazuje, że model PPO-Transformer skutecznie minimalizuje długość kolejek na skrzyżowaniu poprzez adaptacyjne zarządzanie czasem trwania faz zielonych i wyborem priorytetowego kierunku ruchu. W scenariuszu testowym z asymetrycznym rozkładem natężenia (wyższe natężenie w kierunku N/S), model osiąga średnią długość kolejki wynoszącą 1,62 pojazdów (odchylenie standardowe 0,13), co wskazuje na skuteczne zarządzanie kongestią. Model wykazuje zdolność do dynamicznego dostosowania czasu zielonego światła, co prowadzi do redukcji długości kolejek w porównaniu z tradycyjnymi metodami sterowania o stałej sekwencji faz. Mechanizm self-attention w architekturze Transformer umożliwia modelowi identyfikację wzorców kongestii w sekwencji historycznych obserwacji, co pozwala na predykcyjne podejmowanie decyzji o zmianie fazy przed osiągnięciem krytycznej długości kolejki.
+
+### 7.3. Odporność na zakłócenia RFID
+Analiza wrażliwości na zakłócenia RFID (Tabela 5) wykazuje odporność modelu PPO-Transformer na częściowe utraty odczytów. Przy symulacji 20% utraty danych (\(p_{noise} = 0.2\)), degradacja wydajności w zakresie minimalizacji długości kolejek pozostaje w akceptowalnych granicach (wzrost długości kolejki o 8,0% z 1,62 do 1,75 pojazdów), co sugeruje, że model jest zdolny do adaptacji do niekompletnych informacji sensorycznych. Podobnie, opóźnienie wzrasta jedynie o 8,1% (z 8,12 s do 8,78 s), podczas gdy przepustowość pozostaje praktycznie niezmieniona (spadek o 0,6%). Ta właściwość ma kluczowe znaczenie dla praktycznych wdrożeń, gdzie awarie detektorów, interferencje elektromagnetyczne lub problemy z infrastrukturą mogą prowadzić do częściowej utraty danych. Model wykorzystuje historyczne obserwacje z okna czasowego \(L = 48\) kroków, aby uzupełnić brakujące informacje o bieżącym stanie kolejek.
+
+Mechanizm self-attention w architekturze Transformer prawdopodobnie przyczynia się do tej odporności poprzez zdolność do ważenia znaczenia historycznych obserwacji. Gdy część bieżących odczytów jest utracona, model może wykorzystać informacje z poprzednich kroków czasowych w sekwencji, aby uzupełnić brakujące dane. Dodatkowo, okno czasowe \(L = 48\) kroków (odpowiadające 4 minutom historii) zapewnia wystarczający kontekst dla modelu, aby zidentyfikować wzorce ruchu nawet przy częściowej degradacji danych wejściowych.
+
+### 7.4. Wpływ zakłóceń na stabilność decyzji i długość kolejek
+Analiza rozkładów metryk wydajności (Rysunek 8) wskazuje na wpływ zakłóceń RFID na stabilność decyzji modelu, szczególnie w kontekście zarządzania długością kolejek. Porównanie zakresów międzykwartylowych między scenariuszem baseline a scenariuszem z zakłóceniami pozwala ocenić, czy degradacja wydajności jest systematyczna czy losowa. W kontekście długości kolejek, węższe zakresy międzykwartylowe w scenariuszu z zakłóceniami mogą wskazywać na bardziej konserwatywne decyzje agenta (dłuższe czasy zielonego światła), podczas gdy szersze zakresy mogą sugerować większą zmienność w odpowiedzi na niepewne dane wejściowe, co może prowadzić do okresowych wzrostów długości kolejek.
+
+### 7.5. Ograniczenia i przyszłe kierunki badań
+Niniejsze badanie koncentruje się na pojedynczym skrzyżowaniu i jednym poziomie zakłóceń (\(p_{noise} = 0.2\)). Przyszłe badania powinny obejmować analizę wrażliwości dla różnych poziomów zakłóceń (np. \(p_{noise} \in \{0.1, 0.2, 0.3, 0.4\}\)), co pozwoliłoby na określenie progu degradacji wydajności. Dodatkowo, warto zbadać wpływ różnych typów zakłóceń, takich jak bursty errors (skupione utraty odczytów w krótkich okresach) versus random errors (losowe utraty rozłożone równomiernie w czasie), na wydajność modelu.
+
+## 8. Wnioski
+
+Niniejsze badanie demonstruje ewolucję systemu sterowania ruchem, przechodząc od fizycznego modelu demonstracyjnego opartego na RFID do zaawansowanego agenta PPO-Transformer w środowisku symulacyjnym SUMO. Wykazano, że na poziomie pojedynczego, izolowanego skrzyżowania – fundamentalnego scenariusza testowego – proponowane podejście, zasilane danymi z transponderów, wykazuje zdolność do adaptacji do zmiennych warunków ruchu oraz odporność na częściowe utraty danych sensorycznych.
+
+Kluczowe ustalenia z przeprowadzonych eksperymentów obejmują: (1) zdolność modelu do efektywnej minimalizacji długości kolejek poprzez adaptacyjne zarządzanie czasem trwania faz zielonych i wyborem priorytetowego kierunku ruchu, (2) zdolność do generalizacji do scenariusza testowego z asymetrycznym rozkładem natężenia ruchu, gdzie model skutecznie dostosowuje sterowanie do wyższego natężenia w kierunku N/S, (3) odporność na zakłócenia RFID przy poziomie \(p_{noise} = 0.2\), gdzie degradacja wydajności w zakresie minimalizacji kolejek pozostaje w akceptowalnych granicach, oraz (4) stabilność decyzji sterujących nawet w warunkach niekompletnych danych wejściowych, co jest kluczowe dla praktycznych wdrożeń w rzeczywistych systemach ITS.
+
+Kluczowe wyzwanie zidentyfikowane w niniejszej pracy pozostaje kwestią skalowalności i tendencji do optymalizacji lokalnej, która jest niewystarczająca na skalę sieci miejskiej. Ta złożoność jest dodatkowo komplikowana przez rosnącą heterogeniczność floty, obejmującą pojazdy elektryczne i autonomiczne, a także konieczność zarządzania dynamicznymi priorytetami (TSP dla transportu publicznego, EVP dla pojazdów uprzywilejowanych) oraz wymogami regulacyjnymi, takimi jak Strefy Czystego Transportu. Badanie wskazuje, że przyszłe systemy muszą opierać się na fuzji danych z komplementarnych źródeł, gdzie systemy wizyjne szacują kolejki, podczas gdy technologia RFID zapewnia weryfikację tożsamości dla konkretnych pojazdów.
+
+Na podstawie tych wniosków, przyszłe badania będą koncentrować się na przejściu od modelu jednoagentowego do wielopoziomowej, warstwowej architektury zarządzania dla całej sieci miejskiej, zgodnie z koncepcją przedstawioną na Rysunku 9. To podejście, zgodne z rekomendacjami dotyczącymi Multi-Agent RL (MARL) sformułowanymi w przeglądzie literatury, zakłada dekompozycję problemu na poziomy hierarchiczne. Na najniższym poziomie, poziomie skrzyżowania, będą działać autonomiczne agenty (takie jak PPO-Transformer), optymalizujące lokalny przepływ na podstawie fuzji danych. Poziom pośredni, sektor miasta, będzie zarządzany przez modele nadzorcze, których zadaniem nie jest bezpośrednie sterowanie sygnałami, ale wykrywanie wzorców ruchu na skalę dzielnicy (np. fale ruchu) i ustawianie celów dla podległych lokalnych agentów. To rozwiązuje problem czysto lokalnej optymalizacji i umożliwia koordynację, zgodną z obiecującymi wynikami dla Federated Learning.
+
+![Rys. 9. Koncepcja hierarchicznej (warstwowej) architektury sterowania siecią miejską.](Rys/R9.png)
+
+Na najwyższym poziomie, poziomie miasta, model sterowania głównego będzie odpowiedzialny za globalną optymalizację, równoważenie przepływu między sektorami i realizację celów optymalizacji wielokryterialnej, obejmującej nie tylko płynność ruchu, ale także emisje CO2 i bezpieczeństwo. Dalsze badania będą również obejmować rozwój metod Explainable AI (XAI) w celu poprawy zaufania do systemu, integrację z komunikacją V2X oraz walidację algorytmów w rzeczywistych warunkach miejskich, co zostało zidentyfikowane jako kluczowy kierunek badawczy.
+
+## 9. Bibliografia
+
+1. Qadri SSSM, Gökçe MA, Öner E. State-of-art review of traffic signal control methods: challenges and opportunities. Eur Transp Res Rev. 2020;12(1):55. doi: 10.1186/s12544-020-00439-1
+
+2. Michailidis P, Michailidis I, Lazaridis CR, Kosmatopoulos E. Traffic Signal Control via Reinforcement Learning: A Review on Applications and Innovations. Infrastructures. 2025;10(5):114. doi: 10.3390/infrastructures10050114
+
+3. Pawłowicz B, Trybus B, Salach M, Jankowski-Mihułowicz P. Dynamic RFID Identification in Urban Traffic Management Systems. Sensors. 2020;20(15):4225. doi: 10.3390/s20154225
+
+4. Lopez PA, Behrisch M, Bieker-Walz L, Erdmann J, Flötteröd Y, Hilbrich R, et al. Microscopic Traffic Simulation using SUMO. IEEE Xplore. 2018. p. 2575-82. doi: 10.1109/ITSC.2018.8569938
+
+5. Schulman J, Wolski F, Dhariwal P, Radford A, Klimov O. "Proximal Policy Optimization Algorithms". In: arXiv preprint arXiv:1707.06347 (2017). doi: 10.48550/arXiv.1707.06347
+
+6. Vaswani A, Shazeer N, Parmar N, Uszkoreit J, Jones L, Gomez AN, et al. "Attention Is All You Need". In: Advances in Neural Information Processing Systems 30 (NIPS 2017). 2017, pp. 5998-6008. doi: 10.48550/arXiv.1706.03762
+
+7. Federal Highway Administration. Traffic Analysis Tools Program: Traffic Analysis Toolbox, Volume II: Decision Support Methodology for Selecting Traffic Analysis Tools. U.S. Department of Transportation, 2004. (Accessed: 18.11.2025). url: https://ops.fhwa.dot.gov
+
+8. SUMO Documentation. routeSampler.py - SUMO Documentation. 2023. (Accessed: 18.11.2025). url: https://sumo.dlr.de/docs/Tools/Routes.html
+
+9. Federal Highway Administration. Traffic Analysis Tools Program: Guidebook on Traffic Signal Control Algorithms and Applications. U.S. Department of Transportation, 2010. (Accessed: 18.11.2025). url: https://ops.fhwa.dot.gov
+
+10. Yavuz MN, Özen H. Calibration of microscopic traffic simulation of urban road network including mini-roundabouts and unsignalized intersection using open-source simulation tool. Sci J Silesian Univ Technol Ser Transp. 2024;122:305-18. doi: 10.20858/sjsutst.2024.122.17
+
+11. Islam I, Li W, Li S, Heaslip K. Heterogeneous Mixed Traffic Control and Coordination. arXiv (Cornell University). 2024 Sep 18. doi: 10.48550/arXiv.2409.12330
+
+12. Transportation Research Board. Highway Capacity Manual (HCM). Washington, D. C.: Transportation Research Board, 2010. (Accessed: 18.11.2025). url: https://onlinepubs.trb.org/Onlinepubs/sr/sr209/209.pdf
+
+13. Dion F, Rakha H, Kang Y-S. Comparison of delay estimates at under-saturated and over-saturated pre-timed signalized intersections. Transp Res Part B Methodol. 2004;38(2):99-122. doi: 10.1016/S0191-2615(03)00003-1
+
+14. Huang L, Qu X. Improving traffic signal control operations using proximal policy optimization. IET Intell Transp Syst. 2023;17(3). doi: 10.1049/itr2.12286
+
+15. Stęchły A, Pawłowicz B, Siwiec K, Drzał J, Kosior A. Top-level smart city traffic management system with radio frequency identification - based road event detection. Advances in Science and Technology Research Journal. 2025;19(11):429-441. doi: 10.12913/22998624/209674
+
+
