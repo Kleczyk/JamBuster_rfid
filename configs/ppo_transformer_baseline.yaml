@@ -4,9 +4,11 @@ env_name: ppo_transformer_env
 
 env_config:
   sumo_cfg: nets/ppo_transformer_intersection/simulation.sumocfg
-  use_gui: true
+  use_gui: false
   sumo_binary: sumo
   sumo_threads: 2
+  sumo_start_retries: 5
+  sumo_start_retry_wait: 1.0
   delta_time: 5
   yellow_time: 3
   t_green_min: 10

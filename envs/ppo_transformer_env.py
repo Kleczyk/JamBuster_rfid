@@ -138,6 +138,8 @@ class PPOTransformerEnv(gym.Env):
         self.sumo_threads = int(config.get("sumo_threads", 0) or 0)
         self.sumo_step_length = float(config.get("sumo_step_length", 0) or 0)
         self.sumo_extra_args = list(config.get("sumo_extra_args", []) or [])
+        self.sumo_start_retries = int(config.get("sumo_start_retries", 3))
+        self.sumo_start_retry_wait = float(config.get("sumo_start_retry_wait", 1.0))
         self.delta_time = int(config.get("delta_time", 5))
         self.yellow_time = int(config.get("yellow_time", 3))
         self.t_green_min = int(config.get("t_green_min", 10))
@@ -288,10 +290,19 @@ class PPOTransformerEnv(gym.Env):
             cmd += ["--threads", str(self.sumo_threads)]
         if self.sumo_extra_args:
             cmd.extend([str(arg) for arg in self.sumo_extra_args])
-        self._traci_label = f"ppo-env-{uuid.uuid4().hex}"
-        port = self._get_free_port()
-        self.traci.start(cmd, label=self._traci_label, port=port)
-        self.conn = self.traci.getConnection(self._traci_label)
+        last_error = None
+        retries = max(1, self.sumo_start_retries)
+        for _ in range(retries):
+            self._traci_label = f"ppo-env-{uuid.uuid4().hex}"
+            port = self._get_free_port()
+            try:
+                self.traci.start(cmd, label=self._traci_label, port=port)
+                self.conn = self.traci.getConnection(self._traci_label)
+                return
+            except Exception as exc:
+                last_error = exc
+                time.sleep(self.sumo_start_retry_wait)
+        raise RuntimeError(f"SUMO/TraCI start failed after {retries} attempts") from last_error
 
     def _get_free_port(self) -> int:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
