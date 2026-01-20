@@ -38,104 +38,87 @@
     <!-- Mid:  E/W cars=720, buses=140, amb=40 (total 900/h) -->
     <!-- Peak: E/W cars=1080, buses=210, amb=60 (total 1350/h) -->
 
-    <!-- North -->
-    <flow id="flow_north_cars_low1" type="car" begin="0" end="600" vehsPerHour="600" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_low1" type="bus" begin="0" end="600" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="40" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_north_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="1200" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="240" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="80" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_north_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1800" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="360" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_north_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1800" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="360" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_north_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="1200" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="240" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="80" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_north_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="600" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
-    <flow id="flow_north_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="40" route="rd_north" departLane="best" departSpeed="max"/>
-
-    <!-- South -->
-    <flow id="flow_south_cars_low1" type="car" begin="0" end="600" vehsPerHour="600" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_low1" type="bus" begin="0" end="600" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="40" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_south_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="1200" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="240" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="80" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_south_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1800" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="360" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_south_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1800" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="360" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_south_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="1200" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="240" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="80" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_south_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="600" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
-    <flow id="flow_south_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="40" route="rd_south" departLane="best" departSpeed="max"/>
-
-    <!-- East -->
-    <flow id="flow_east_cars_low1" type="car" begin="0" end="600" vehsPerHour="360" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_low1" type="bus" begin="0" end="600" vehsPerHour="70" route="rd_east" departLane="best" departSpeed="max"/>
+    <!-- begin="0" flows (sorted by begin, end, id) -->
     <flow id="flow_east_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="20" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_east_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="720" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="140" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="40" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_east_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1080" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="210" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="60" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_east_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1080" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="210" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="60" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_east_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="720" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="140" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="40" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <flow id="flow_east_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="360" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="70" route="rd_east" departLane="best" departSpeed="max"/>
-    <flow id="flow_east_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="20" route="rd_east" departLane="best" departSpeed="max"/>
-
-    <!-- West -->
-    <flow id="flow_west_cars_low1" type="car" begin="0" end="600" vehsPerHour="360" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_low1" type="bus" begin="0" end="600" vehsPerHour="70" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_low1" type="bus" begin="0" end="600" vehsPerHour="70" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_low1" type="car" begin="0" end="600" vehsPerHour="360" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="40" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_low1" type="bus" begin="0" end="600" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_low1" type="car" begin="0" end="600" vehsPerHour="600" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="40" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_low1" type="bus" begin="0" end="600" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_low1" type="car" begin="0" end="600" vehsPerHour="600" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_low1" type="ambulance" begin="0" end="600" vehsPerHour="20" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_low1" type="bus" begin="0" end="600" vehsPerHour="70" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_low1" type="car" begin="0" end="600" vehsPerHour="360" route="rd_west" departLane="best" departSpeed="max"/>
 
-    <flow id="flow_west_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="720" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="140" route="rd_west" departLane="best" departSpeed="max"/>
+    <!-- begin="600" flows (sorted by begin, end, id) -->
+    <flow id="flow_east_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="40" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="140" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="720" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="80" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="240" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="1200" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="80" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="240" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="1200" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_mid1" type="ambulance" begin="600" end="1200" vehsPerHour="40" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_mid1" type="bus" begin="600" end="1200" vehsPerHour="140" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_mid1" type="car" begin="600" end="1200" vehsPerHour="720" route="rd_west" departLane="best" departSpeed="max"/>
 
-    <flow id="flow_west_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1080" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="210" route="rd_west" departLane="best" departSpeed="max"/>
+    <!-- begin="1200" flows (sorted by begin, end, id) -->
+    <flow id="flow_east_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="60" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="210" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1080" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="360" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1800" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="360" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1800" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_peak1" type="ambulance" begin="1200" end="1800" vehsPerHour="60" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_peak1" type="bus" begin="1200" end="1800" vehsPerHour="210" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_peak1" type="car" begin="1200" end="1800" vehsPerHour="1080" route="rd_west" departLane="best" departSpeed="max"/>
 
-    <flow id="flow_west_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1080" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="210" route="rd_west" departLane="best" departSpeed="max"/>
+    <!-- begin="1800" flows (sorted by begin, end, id) -->
+    <flow id="flow_east_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="60" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="210" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1080" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="360" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1800" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="360" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1800" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_peak2" type="ambulance" begin="1800" end="2400" vehsPerHour="60" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_peak2" type="bus" begin="1800" end="2400" vehsPerHour="210" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_peak2" type="car" begin="1800" end="2400" vehsPerHour="1080" route="rd_west" departLane="best" departSpeed="max"/>
 
-    <flow id="flow_west_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="720" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="140" route="rd_west" departLane="best" departSpeed="max"/>
+    <!-- begin="2400" flows (sorted by begin, end, id) -->
+    <flow id="flow_east_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="40" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="140" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="720" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="80" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="240" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="1200" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="80" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="240" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="1200" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_mid2" type="ambulance" begin="2400" end="3000" vehsPerHour="40" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_mid2" type="bus" begin="2400" end="3000" vehsPerHour="140" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_mid2" type="car" begin="2400" end="3000" vehsPerHour="720" route="rd_west" departLane="best" departSpeed="max"/>
 
-    <flow id="flow_west_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="360" route="rd_west" departLane="best" departSpeed="max"/>
-    <flow id="flow_west_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="70" route="rd_west" departLane="best" departSpeed="max"/>
+    <!-- begin="3000" flows (sorted by begin, end, id) -->
+    <flow id="flow_east_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="20" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="70" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_east_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="360" route="rd_east" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="40" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="120" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_north_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="600" route="rd_north" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="40" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="120" route="rd_south" departLane="best" departSpeed="max"/>
+    <flow id="flow_south_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="600" route="rd_south" departLane="best" departSpeed="max"/>
     <flow id="flow_west_ambulances_low2" type="ambulance" begin="3000" end="7200" vehsPerHour="20" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_buses_low2" type="bus" begin="3000" end="7200" vehsPerHour="70" route="rd_west" departLane="best" departSpeed="max"/>
+    <flow id="flow_west_cars_low2" type="car" begin="3000" end="7200" vehsPerHour="360" route="rd_west" departLane="best" departSpeed="max"/>
 </routes>
-
