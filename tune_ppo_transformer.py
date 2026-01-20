@@ -12,7 +12,7 @@ import yaml
 from ray import tune
 from ray.tune.logger import TBXLoggerCallback
 from ray.tune.search.optuna import OptunaSearch
-from ray.tune.schedulers import ASHAScheduler
+from ray.tune.schedulers import ASHAScheduler, FIFOScheduler
 
 from train_ppo_transformer import build_config, load_config
 
@@ -117,6 +117,9 @@ def main() -> int:
     overrides = dict(tune_cfg.get("config_overrides", {}))
     overrides.setdefault("rollout_fragment_length", "auto")
     _deep_update(base_cfg, overrides)
+    noisy_cfg = cfg.get("noisy_eval")
+    if noisy_cfg:
+        base_cfg["noisy_eval"] = dict(noisy_cfg)
 
     search_spec = tune_cfg.get("search_space", {})
     search_space: dict = {}
@@ -136,7 +139,14 @@ def main() -> int:
 
     _deep_update(base_cfg, search_space)
 
-    scheduler = ASHAScheduler(metric=metric, mode=mode)
+    grace_period = int(tune_cfg.get("grace_period", 2))
+    scheduler_name = str(tune_cfg.get("scheduler", "asha")).lower()
+    if scheduler_name in ("asha", "asynchyperband", "async_hyperband"):
+        scheduler = ASHAScheduler(metric=metric, mode=mode, grace_period=grace_period, time_attr="training_iteration")
+    elif scheduler_name in ("fifo", "none", "basic"):
+        scheduler = FIFOScheduler()
+    else:
+        raise ValueError(f"Unsupported scheduler: {scheduler_name}")
     search_alg = OptunaSearch(metric=metric, mode=mode)
     callbacks = []
     if bool(tune_cfg.get("tensorboard_hparams", True)):

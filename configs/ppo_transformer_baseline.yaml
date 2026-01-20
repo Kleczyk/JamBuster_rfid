@@ -50,8 +50,8 @@ rollout:
   batch_mode: truncate_episodes
 
 resources:
-  num_cpus: 220
-  num_gpus: 4
+  num_cpus: 10
+  num_gpus: 1
   object_store_memory_gb: 10
 
 ray:
@@ -92,19 +92,21 @@ tune:
   metric: custom_metrics/delay_mean
   mode: min
   tensorboard_hparams: true
-  num_samples: 20
-  max_concurrent_trials: 20
+  num_samples: 4
+  max_concurrent_trials: 4
   stop_timesteps: 200000
+  grace_period: 2
+  scheduler: fifo
   config_overrides:
     rollout_fragment_length: auto
     num_gpus: 0.2
     num_cpus: 11
-    num_env_runners: 1
+    num_env_runners: 0
     num_envs_per_env_runner: 1
     env_config:
       sumo_threads: 2
       episode_horizon_steps: 120
-      soft_reset: true
+      soft_reset: True
   search_space:
     training:
       lr:
