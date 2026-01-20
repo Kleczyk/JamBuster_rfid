@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from pathlib import Path
 import inspect
+import time
 
 import ray
 import yaml
@@ -18,6 +20,25 @@ from ray.tune.registry import register_env
 from envs.ppo_transformer_env import PPOTransformerEnv
 from models.ppo_transformer_model import PPOTransformerModel
 from callbacks.metrics_callbacks import MetricsCallbacks
+
+_DEBUG_LOG_PATH = "/home/dk/repos/JamBuster_rfid/.cursor/debug.log"
+
+
+def _dbg_log(hypothesis_id: str, location: str, message: str, data: dict, run_id: str = "pre-fix") -> None:
+    payload = {
+        "sessionId": "debug-session",
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
 
 
 def load_config(path: Path) -> dict:
@@ -39,6 +60,18 @@ def build_config(cfg: dict) -> PPOConfig:
     env_name = cfg.get("env_name", "ppo_transformer_env")
 
     env_config = _resolve_sumo_cfg_path(dict(cfg.get("env_config", {})))
+
+    # region agent log
+    _dbg_log(
+        "H10",
+        "train_ppo_transformer.py:build_config",
+        "callbacks_source",
+        {
+            "callbacks_module": getattr(MetricsCallbacks, "__module__", None),
+            "callbacks_file": inspect.getfile(MetricsCallbacks),
+        },
+    )
+    # endregion
 
     register_env(env_name, lambda env_cfg: PPOTransformerEnv(env_cfg))
     ModelCatalog.register_custom_model("ppo_transformer_model", PPOTransformerModel)
