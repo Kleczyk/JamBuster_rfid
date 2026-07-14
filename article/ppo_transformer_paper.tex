@@ -20,14 +20,19 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{array}
+\usepackage{multirow}
+\usepackage{makecell}
 
 % Pakiety dla lepszego formatowania
 \usepackage{geometry}
 \geometry{a4paper, margin=2.5cm}
 \usepackage{setspace}
 \onehalfspacing
+\usepackage[expansion=false]{microtype}
+\setlength{\emergencystretch}{1.5em}
 
 % Pakiety dla hiperlinków i kolorów
+\usepackage{xurl}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -45,6 +50,7 @@
 \date{\today}
 
 \begin{document}
+\selectlanguage{polish}
 
 \maketitle
 
@@ -129,7 +135,7 @@ gdzie $p_t \in \{0,1\}^K$ to one-hot fazy ($K=2$), a $\tau_t$ to znormalizowany 
 \begin{equation}
 \tau_t = \frac{g_t^{\text{elapsed}}}{g_{\text{max}}}
 \end{equation}
-W niniejszej implementacji $g_t^{\text{elapsed}}$ odpowiada \texttt{phase\_elapsed}, a $g_{\text{max}}$ odpowiada $t_{\text{green\_max}}$.
+W niniejszej implementacji $g_t^{\text{elapsed}}$ odpowiada \path{phase_elapsed}, a $g_{\text{max}}$ odpowiada $t_{\text{green\_max}}$.
 
 Zgodnie z konwencją w artykule wzorcowym, obserwacja może być opisana również przez wymiar:
 \begin{equation}
@@ -183,7 +189,7 @@ Zakłócenia odczytów są modelowane poprzez losowe gubienie zliczeń:
 \begin{equation}
 \tilde{n}_t \sim \text{Binomial}(n_t, 1 - p_{\text{noise}})
 \end{equation}
-gdzie $p_{\text{noise}}$ odpowiada \texttt{rfid\_noise\_rate} (w eksperymencie 0.2).
+gdzie $p_{\text{noise}}$ odpowiada \path{rfid_noise_rate} (w eksperymencie 0.2).
 
 \section{Metodyka}
 
@@ -225,9 +231,11 @@ Proces treningu agenta DRL wykorzystywał równoległe instancje środowiska SUM
 
 \begin{table}[H]
 \centering
+\small
+\setlength{\tabcolsep}{4pt}
 \caption{Hiperparametry i konfiguracja treningu dla PPO-Transformer}
 \label{tab:1}
-\begin{tabular}{llll}
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X l l}
 \toprule
 Kategoria & Parametr & Symbol & Wartość \\
 \midrule
@@ -246,7 +254,7 @@ Kategoria & Parametr & Symbol & Wartość \\
  & Waga kolejki & $\beta$ & 0.30 \\
  & Waga zatrzymań & $\gamma$ & 0.15 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Scenariusze ruchu}
@@ -295,13 +303,15 @@ Kierunek & Poziom & Samochody/h & Autobusy/h & Karetki/h & Suma/h \\
 
 Eksperyment został zaprojektowany w celu oceny zdolności modelu PPO-Transformer do minimalizacji długości kolejek pojazdów na skrzyżowaniu, przy jednoczesnej ocenie odporności na zakłócenia danych z detektorów RFID. Kluczową metryką eksperymentalną jest średnia długość kolejki, mierzona jako liczba pojazdów zatrzymanych na pasach wlotowych w każdym kroku czasowym.
 
-\textbf{Pomiar długości kolejek:} W każdym kroku symulacji, dla wszystkich pasów wlotowych skrzyżowania, zliczana jest liczba pojazdów znajdujących się w stanie zatrzymania (prędkość poniżej progu $v_{\text{threshold}} = 0.1$ m/s) za pomocą funkcji SUMO \texttt{getLastStepHaltingNumber()}. Zliczenia dla wszystkich pasów są sumowane, tworząc całkowitą długość kolejki $Q_t$ w kroku czasowym $t$. Średnia długość kolejki w oknie czasowym $\Delta t = 5$ s jest następnie wykorzystywana jako składnik funkcji nagrody zgodnie z równaniem (4), gdzie waga kolejki wynosi $\beta = 0.30$.
+\textbf{Pomiar długości kolejek:} W każdym kroku symulacji, dla wszystkich pasów wlotowych skrzyżowania, zliczana jest liczba pojazdów znajdujących się w stanie zatrzymania (prędkość poniżej progu $v_{\text{threshold}} = 0.1$ m/s) za pomocą funkcji SUMO \texttt{getLastStep\allowbreak Halting\allowbreak Number()}. Zliczenia dla wszystkich pasów są sumowane, tworząc całkowitą długość kolejki $Q_t$ w kroku czasowym $t$. Średnia długość kolejki w oknie czasowym $\Delta t = 5$ s jest następnie wykorzystywana jako składnik funkcji nagrody zgodnie z równaniem (4), gdzie waga kolejki wynosi $\beta = 0.30$.
 
-\textbf{Faza treningowa:} Model jest trenowany na scenariuszu treningowym (\texttt{simulation.sumocfg}) z pełną dostępnością danych RFID (\texttt{rfid\_noise\_rate = 0.0}). Trening trwa do osiągnięcia 200,000 kroków środowiskowych przy wykorzystaniu równoległych instancji SUMO (110 równoległych środowisk) w celu przyspieszenia zbierania doświadczeń. W trakcie treningu agent uczy się optymalizować sterowanie sygnalizacją, minimalizując długość kolejek poprzez odpowiedni wybór faz i czasu trwania zielonego światła.
+\textbf{Faza treningowa:} Model jest trenowany na scenariuszu treningowym (\path{simulation.sumocfg}) z pełną dostępnością danych RFID (\path{rfid_noise_rate} = 0.0). Trening trwa do osiągnięcia 200,000 kroków środowiskowych przy wykorzystaniu równoległych instancji SUMO (110 równoległych środowisk) w celu przyspieszenia zbierania doświadczeń. W trakcie treningu agent uczy się optymalizować sterowanie sygnalizacją, minimalizując długość kolejek poprzez odpowiedni wybór faz i czasu trwania zielonego światła.
 
-\textbf{Faza ewaluacji baseline:} Po każdej iteracji treningowej (co 1 iterację) przeprowadzana jest ewaluacja na scenariuszu testowym (\texttt{simulation\_test.sumocfg}) z pełną dostępnością danych (\texttt{rfid\_noise\_rate = 0.0}). Ewaluacja składa się z 5 niezależnych epizodów, podczas których polityka działa w trybie eksploatacji (bez eksploracji). W każdym epizodzie mierzone są metryki: średnia długość kolejki [poj], średnie opóźnienie [s], liczba zatrzymań [poj] oraz przepustowość [poj/h]. Metryki są agregowane i logowane do TensorBoard pod prefiksem \texttt{evaluation/}, umożliwiając śledzenie postępów w minimalizacji kolejek w trakcie treningu.
+\textbf{Faza ewaluacji baseline:}\\
+Po każdej iteracji treningowej (co 1 iterację) przeprowadzana jest ewaluacja na scenariuszu testowym (\path{simulation_test.sumocfg}) z pełną dostępnością danych (\path{rfid_noise_rate} = 0.0). Ewaluacja składa się z 5 niezależnych epizodów, podczas których polityka działa w trybie eksploatacji (bez eksploracji). W każdym epizodzie mierzone są metryki: średnia długość kolejki [poj], średnie opóźnienie [s], liczba zatrzymań [poj] oraz przepustowość [poj/h]. Metryki są agregowane i logowane do TensorBoard pod prefiksem \path{evaluation/}, umożliwiając śledzenie postępów w minimalizacji kolejek w trakcie treningu.
 
-\textbf{Faza ewaluacji z zakłóceniami RFID:} Równolegle do ewaluacji baseline, przeprowadzana jest dodatkowa ewaluacja na tym samym scenariuszu testowym, ale z symulacją zakłóceń odczytów RFID (\texttt{rfid\_noise\_rate = 0.2}). Zakłócenia są modelowane zgodnie z równaniem (6), gdzie dla każdego zliczenia pojazdów $n_t$ w oknie czasowym, rzeczywiste zliczenie przekazane do agenta wynosi $\tilde{n}_t \sim \text{Binomial}(n_t, 0.8)$, co symuluje 20\% utratę odczytów w każdym kroku czasowym. Ta faza pozwala ocenić, czy model zachowuje zdolność do minimalizacji kolejek nawet przy niekompletnych danych wejściowych. Metryki z tej ewaluacji są logowane pod prefiksem \texttt{evaluation\_noisy/}, umożliwiając bezpośrednie porównanie wydajności modelu w warunkach idealnych i przy zakłóceniach.
+\textbf{Faza ewaluacji z zakłóceniami RFID:}\\
+Równolegle do ewaluacji baseline, przeprowadzana jest dodatkowa ewaluacja na tym samym scenariuszu testowym, ale z symulacją zakłóceń odczytów RFID (\path{rfid_noise_rate} = 0.2). Zakłócenia są modelowane zgodnie z równaniem (6), gdzie dla każdego zliczenia pojazdów $n_t$ w oknie czasowym, rzeczywiste zliczenie przekazane do agenta wynosi $\tilde{n}_t \sim \text{Binomial}(n_t, 0.8)$, co symuluje 20\% utratę odczytów w każdym kroku czasowym. Ta faza pozwala ocenić, czy model zachowuje zdolność do minimalizacji kolejek nawet przy niekompletnych danych wejściowych. Metryki z tej ewaluacji są logowane pod prefiksem \path{evaluation_noisy/}, umożliwiając bezpośrednie porównanie wydajności modelu w warunkach idealnych i przy zakłóceniach.
 
 Taki protokół pozwala na ocenę trzech kluczowych aspektów: (1) zdolności modelu do generalizacji do nowego scenariusza ruchu (asymetryczne natężenie N/S vs E/W), (2) efektywności w minimalizacji długości kolejek jako głównego celu optymalizacji, oraz (3) odporności na degradację danych wejściowych, co ma kluczowe znaczenie dla praktycznych wdrożeń w rzeczywistych systemach ITS, gdzie awarie detektorów mogą prowadzić do częściowej utraty danych.
 
@@ -313,18 +323,20 @@ Tabela~\ref{tab:4} przedstawia podsumowanie wydajności metody PPO-Transformer w
 
 \begin{table}[H]
 \centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
 \caption{Metryki wydajności w scenariuszu testowym (bez zakłóceń, $p_{\text{noise}} = 0.0$)}
 \label{tab:4}
-\begin{tabular}{lccc}
+\begin{tabularx}{\textwidth}{l>{\centering\arraybackslash}p{2.2cm}>{\centering\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X}
 \toprule
-Metryka & Wartości średnie & Odchylenie standardowe & Uwagi \\
+Metryka & \makecell{Wartości\\średnie} & \makecell{Odchylenie\\standardowe} & Uwagi \\
 \midrule
-Opóźnienie [s] & 8,12 & 0,64 & Agregowane z \texttt{evaluation/custom\_metrics/delay\_mean} \\
-Długość kolejki [poj] & 1,62 & 0,13 & Agregowane z \texttt{evaluation/custom\_metrics/queue\_mean} \\
-Liczba zatrzymań [poj] & 0,85 & 0,01 & Agregowane z \texttt{evaluation/custom\_metrics/stops\_mean} \\
-Przepustowość [poj/h] & 1,65 & 0,00 & Agregowane z \texttt{evaluation/custom\_metrics/throughput\_mean} \\
+Opóźnienie [s] & 8,12 & 0,64 & Agregowane z \url{evaluation/custom_metrics/delay_mean} \\
+Długość kolejki [poj] & 1,62 & 0,13 & Agregowane z \url{evaluation/custom_metrics/queue_mean} \\
+Liczba zatrzymań [poj] & 0,85 & 0,01 & Agregowane z \url{evaluation/custom_metrics/stops_mean} \\
+Przepustowość [poj/h] & 1,65 & 0,00 & Agregowane z \url{evaluation/custom_metrics/throughput_mean} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Analiza wrażliwości na zakłócenia RFID}
@@ -333,18 +345,20 @@ Tabela~\ref{tab:5} przedstawia wyniki oceny odporności modelu na częściowe ut
 
 \begin{table}[H]
 \centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
 \caption{Metryki wydajności przy zakłóceniach RFID ($p_{\text{noise}} = 0.2$)}
 \label{tab:5}
-\begin{tabular}{lcccc}
+\begin{tabularx}{\textwidth}{l>{\centering\arraybackslash}p{2.2cm}>{\centering\arraybackslash}p{2.6cm}>{\centering\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}X}
 \toprule
-Metryka & Wartości średnie & Odchylenie standardowe & Zmiana względem baseline [\%] & Uwagi \\
+Metryka & \makecell{Wartości\\średnie} & \makecell{Odchylenie\\standardowe} & \makecell{Zmiana względem\\baseline [\%]} & Uwagi \\
 \midrule
-Opóźnienie [s] & 8,78 & 0,72 & +8,1 & Agregowane z \texttt{evaluation\_noisy/custom\_metrics/delay\_mean} \\
-Długość kolejki [poj] & 1,75 & 0,15 & +8,0 & Agregowane z \texttt{evaluation\_noisy/custom\_metrics/queue\_mean} \\
-Liczba zatrzymań [poj] & 0,91 & 0,02 & +7,1 & Agregowane z \texttt{evaluation\_noisy/custom\_metrics/stops\_mean} \\
-Przepustowość [poj/h] & 1,64 & 0,01 & -0,6 & Agregowane z \texttt{evaluation\_noisy/custom\_metrics/throughput\_mean} \\
+Opóźnienie [s] & 8,78 & 0,72 & +8,1 & Agregowane z \url{evaluation_noisy/custom_metrics/delay_mean} \\
+Długość kolejki [poj] & 1,75 & 0,15 & +8,0 & Agregowane z \url{evaluation_noisy/custom_metrics/queue_mean} \\
+Liczba zatrzymań [poj] & 0,91 & 0,02 & +7,1 & Agregowane z \url{evaluation_noisy/custom_metrics/stops_mean} \\
+Przepustowość [poj/h] & 1,64 & 0,01 & -0,6 & Agregowane z \url{evaluation_noisy/custom_metrics/throughput_mean} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 Porównanie wyników z Tabeli~\ref{tab:4} i Tabeli~\ref{tab:5} pozwala na ocenę degradacji wydajności modelu w warunkach niekompletnych danych. Wartości w kolumnie ``Zmiana względem baseline [\%]'' wskazują na procentową zmianę każdej metryki przy przejściu z warunków idealnych ($p_{\text{noise}} = 0.0$) do warunków z zakłóceniami ($p_{\text{noise}} = 0.2$).
