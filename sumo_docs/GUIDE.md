@@ -82,3 +82,7 @@ Zawsze sprawdzaj **[FAQ.md](FAQ.md)** – większość problemów, na które nat
 n 
 
 
+
+
+
+
