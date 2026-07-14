@@ -63,6 +63,27 @@ def build_config(cfg: dict) -> PPOConfig:
 
     # region agent log
     _dbg_log(
+        "H1",
+        "train_ppo_transformer.py:build_config",
+        "build_config_inputs",
+        {
+            "env_name": env_name,
+            "train_batch_size": cfg.get("training", {}).get("train_batch_size"),
+            "num_epochs": cfg.get("training", {}).get("num_epochs"),
+            "minibatch_size": cfg.get("training", {}).get("minibatch_size"),
+            "rollout_num_env_runners": cfg.get("rollout", {}).get("num_env_runners"),
+            "rollout_num_envs_per_env_runner": cfg.get("rollout", {}).get("num_envs_per_env_runner"),
+            "rollout_fragment_length": cfg.get("rollout", {}).get("rollout_fragment_length"),
+            "batch_mode": cfg.get("rollout", {}).get("batch_mode"),
+            "episode_horizon_steps": env_config.get("episode_horizon_steps"),
+            "soft_reset": env_config.get("soft_reset"),
+            "sumo_cfg": env_config.get("sumo_cfg"),
+        },
+    )
+    # endregion
+
+    # region agent log
+    _dbg_log(
         "H10",
         "train_ppo_transformer.py:build_config",
         "callbacks_source",
@@ -179,6 +200,16 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = load_config(Path(args.config))
+    os.environ.setdefault("RAY_AIR_NEW_OUTPUT", "0")
+    # region agent log
+    removed_tune_result_dir = os.environ.pop("TUNE_RESULT_DIR", None)
+    _dbg_log(
+        "H14",
+        "train_ppo_transformer.py:main",
+        "tune_result_dir_cleared",
+        {"removed": removed_tune_result_dir is not None, "value": removed_tune_result_dir},
+    )
+    # endregion
     _apply_ray_env(cfg)
     resources_cfg = cfg.get("resources", {})
     object_store_gb = resources_cfg.get("object_store_memory_gb")
@@ -217,6 +248,33 @@ def main() -> int:
         if eval_config:
             noisy_cfg["evaluation_config"] = eval_config
         config_dict["noisy_eval"] = noisy_cfg
+
+    # region agent log
+    try:
+        from ray.tune.logger import DEFAULT_LOGGER_CLASSES
+
+        tbx_in_defaults = any(getattr(cls, "__name__", "") == "TBXLogger" for cls in DEFAULT_LOGGER_CLASSES)
+        default_loggers = [getattr(cls, "__name__", str(cls)) for cls in DEFAULT_LOGGER_CLASSES]
+    except Exception:
+        tbx_in_defaults = None
+        default_loggers = None
+    _dbg_log(
+        "H13",
+        "train_ppo_transformer.py:main",
+        "tune_run_params",
+        {
+            "cwd": os.getcwd(),
+            "name": args.name,
+            "storage": args.storage,
+            "storage_path": storage_path,
+            "stop_timesteps": stop.get("timesteps_total"),
+            "tbx_in_default_loggers": tbx_in_defaults,
+            "default_loggers": default_loggers,
+            "ray_air_new_output": os.environ.get("RAY_AIR_NEW_OUTPUT"),
+            "tune_result_dir": os.environ.get("TUNE_RESULT_DIR"),
+        },
+    )
+    # endregion
 
     tune.run(
         "PPO",

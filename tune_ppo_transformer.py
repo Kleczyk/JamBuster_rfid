@@ -4,18 +4,79 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import time
+import traceback
 from pathlib import Path
 
 import ray
 import yaml
 from ray import tune
+from ray.tune.callback import Callback
 from ray.tune.logger import TBXLoggerCallback
+from ray.tune.progress_reporter import CLIReporter
 from ray.tune.search.optuna import OptunaSearch
 from ray.tune.schedulers import ASHAScheduler, FIFOScheduler
 
 from train_ppo_transformer import build_config, load_config
 
+_DEBUG_LOG_PATH = "/home/dk/repos/JamBuster_rfid/.cursor/debug.log"
+
+
+def _dbg_log(hypothesis_id: str, location: str, message: str, data: dict, run_id: str = "pre-fix") -> None:
+    payload = {
+        "sessionId": "debug-session",
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+
+
+class DebugTuneCallback(Callback):
+    def on_trial_result(self, iteration, trials, trial, result: dict, **info) -> None:
+        custom_metrics = result.get("custom_metrics") if isinstance(result, dict) else None
+        custom_keys = sorted(custom_metrics.keys()) if isinstance(custom_metrics, dict) else None
+        # region agent log
+        _dbg_log(
+            "H15",
+            "tune_ppo_transformer.py:DebugTuneCallback",
+            "trial_result",
+            {
+                "trial_id": getattr(trial, "trial_id", None),
+                "trial_logdir": getattr(trial, "logdir", None),
+                "trial_local_path": getattr(trial, "local_path", None),
+                "trial_storage": str(getattr(trial, "storage", None)),
+                "training_iteration": result.get("training_iteration") if isinstance(result, dict) else None,
+                "timesteps_total": result.get("timesteps_total") if isinstance(result, dict) else None,
+                "episodes_this_iter": result.get("episodes_this_iter") if isinstance(result, dict) else None,
+                "logdir": result.get("logdir") if isinstance(result, dict) else None,
+                "custom_metric_keys": custom_keys,
+            },
+        )
+        # endregion
+
+    def on_trial_error(self, iteration, trials, trial, **info) -> None:
+        # region agent log
+        _dbg_log(
+            "H15",
+            "tune_ppo_transformer.py:DebugTuneCallback",
+            "trial_error",
+            {
+                "trial_id": getattr(trial, "trial_id", None),
+                "logdir": getattr(trial, "logdir", None),
+                "error_file": getattr(trial, "error_file", None),
+            },
+        )
+        # endregion
 
 def _build_tune_param(spec: dict):
     param_type = spec.get("type")
@@ -85,6 +146,16 @@ def main() -> int:
 
     cfg = load_config(Path(args.config))
     tune_cfg = cfg.get("tune", {})
+    os.environ.setdefault("RAY_AIR_NEW_OUTPUT", "0")
+    # region agent log
+    removed_tune_result_dir = os.environ.pop("TUNE_RESULT_DIR", None)
+    _dbg_log(
+        "H14",
+        "tune_ppo_transformer.py:main",
+        "tune_result_dir_cleared",
+        {"removed": removed_tune_result_dir is not None, "value": removed_tune_result_dir},
+    )
+    # endregion
     _apply_ray_env(cfg)
     resources_cfg = cfg.get("resources", {})
     object_store_gb = resources_cfg.get("object_store_memory_gb")
@@ -139,6 +210,31 @@ def main() -> int:
 
     _deep_update(base_cfg, search_space)
 
+    env_cfg = base_cfg.get("env_config", {}) if isinstance(base_cfg.get("env_config"), dict) else {}
+    # region agent log
+    _dbg_log(
+        "H2",
+        "tune_ppo_transformer.py:main",
+        "tune_final_config",
+        {
+            "config_path": str(Path(args.config).resolve()),
+            "train_batch_size": base_cfg.get("train_batch_size"),
+            "num_epochs": base_cfg.get("num_epochs"),
+            "minibatch_size": base_cfg.get("minibatch_size"),
+            "num_env_runners": base_cfg.get("num_env_runners"),
+            "num_envs_per_env_runner": base_cfg.get("num_envs_per_env_runner"),
+            "rollout_fragment_length": base_cfg.get("rollout_fragment_length"),
+            "batch_mode": base_cfg.get("batch_mode"),
+            "evaluation_interval": base_cfg.get("evaluation_interval"),
+            "evaluation_duration": base_cfg.get("evaluation_duration"),
+            "noisy_eval_enabled": bool(base_cfg.get("noisy_eval")),
+            "episode_horizon_steps": env_cfg.get("episode_horizon_steps"),
+            "soft_reset": env_cfg.get("soft_reset"),
+            "sumo_cfg": env_cfg.get("sumo_cfg"),
+        },
+    )
+    # endregion
+
     grace_period = int(tune_cfg.get("grace_period", 2))
     scheduler_name = str(tune_cfg.get("scheduler", "asha")).lower()
     if scheduler_name in ("asha", "asynchyperband", "async_hyperband"):
@@ -151,8 +247,44 @@ def main() -> int:
     callbacks = []
     if bool(tune_cfg.get("tensorboard_hparams", True)):
         callbacks.append(TBXLoggerCallback())
+    callbacks.append(DebugTuneCallback())
+
+    metric_columns = ["training_iteration", "timesteps_total", "episodes_total", "custom_metrics/delay_mean"]
+    progress_reporter = CLIReporter(metric_columns=metric_columns)
+    # region agent log
+    _dbg_log(
+        "H16",
+        "tune_ppo_transformer.py:main",
+        "progress_reporter_config",
+        {
+            "reporter_type": type(progress_reporter).__name__,
+            "metric_columns": metric_columns,
+        },
+    )
+    # endregion
 
     storage_path = str(Path(storage).resolve().as_uri())
+    # region agent log
+    _dbg_log(
+        "H13",
+        "tune_ppo_transformer.py:main",
+        "tuner_run_config",
+        {
+            "cwd": os.getcwd(),
+            "name": name,
+            "storage": storage,
+            "storage_path": storage_path,
+            "scheduler": type(scheduler).__name__,
+            "search_alg": type(search_alg).__name__,
+            "callbacks": [type(cb).__name__ for cb in callbacks],
+            "ray_air_new_output": os.environ.get("RAY_AIR_NEW_OUTPUT"),
+            "ray_dedup_logs": os.environ.get("RAY_DEDUP_LOGS"),
+            "tune_disable_auto_callback_loggers": os.environ.get("TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"),
+            "tune_result_dir": os.environ.get("TUNE_RESULT_DIR"),
+            "ray_air_progress_reporter": os.environ.get("RAY_AIR_PROGRESS_REPORTER"),
+        },
+    )
+    # endregion
     tuner = tune.Tuner(
         "PPO",
         param_space=base_cfg,
@@ -167,10 +299,44 @@ def main() -> int:
             storage_path=storage_path,
             stop={"timesteps_total": stop_timesteps},
             callbacks=callbacks or None,
+            progress_reporter=progress_reporter,
+            verbose=1,
         ),
     )
 
-    tuner.fit()
+    # region agent log
+    _dbg_log(
+        "H15",
+        "tune_ppo_transformer.py:main",
+        "tuner_fit_start",
+        {"name": name, "num_samples": num_samples, "max_concurrent": max_concurrent, "stop_timesteps": stop_timesteps},
+    )
+    # endregion
+    try:
+        result = tuner.fit()
+    except Exception:
+        # region agent log
+        _dbg_log(
+            "H15",
+            "tune_ppo_transformer.py:main",
+            "tuner_fit_error",
+            {"error": traceback.format_exc(limit=5)},
+        )
+        # endregion
+        raise
+    # region agent log
+    _dbg_log(
+        "H15",
+        "tune_ppo_transformer.py:main",
+        "tuner_fit_done",
+        {
+            "result_type": type(result).__name__,
+            "num_errors": getattr(result, "num_errors", None),
+            "num_terminated": getattr(result, "num_terminated", None),
+            "num_running": getattr(result, "num_running", None),
+        },
+    )
+    # endregion
     return 0
 
 

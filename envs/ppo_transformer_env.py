@@ -3,7 +3,7 @@
 Gymnasium environment for PPO-Transformer traffic signal control in SUMO.
 
 State (per step):
-- RFID counts by approach for car/bus/ambulance (4 x 3 = 12)
+- RFID counts by approach for car/bus/delivery (4 x 3 = 12)
 - current phase one-hot (2)
 - normalized green elapsed time (1)
 
@@ -16,6 +16,7 @@ Action space: MultiDiscrete([2, 3])
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import time
@@ -116,6 +117,26 @@ def _clamp(val: float, low: float, high: float) -> float:
     return max(low, min(high, val))
 
 
+_DEBUG_LOG_PATH = "/home/dk/repos/JamBuster_rfid/.cursor/debug.log"
+
+
+def _dbg_log(hypothesis_id: str, location: str, message: str, data: Dict, run_id: str = "pre-fix") -> None:
+    payload = {
+        "sessionId": "debug-session",
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+
+
 class PPOTransformerEnv(gym.Env):
     metadata = {"render_modes": []}
 
@@ -196,15 +217,53 @@ class PPOTransformerEnv(gym.Env):
         self.queue_accum = 0.0
         self.stops_accum = 0
         self.throughput_accum = 0
+        self.throughput_tls_accum = 0
         self.episode_steps = 0
+        self.prev_incoming_vehicles = set()
+        self._debug_reset_count = 0
+        self._debug_start_count = 0
+        self._debug_simulate_count = 0
+
+        # region agent log
+        _dbg_log(
+            "H3",
+            "envs/ppo_transformer_env.py:__init__",
+            "env_init_config",
+            {
+                "sumo_cfg": str(self.sumo_cfg),
+                "episode_horizon_steps": self.episode_horizon_steps,
+                "sim_end": self.sim_end,
+                "soft_reset": self.soft_reset,
+                "delta_time": self.delta_time,
+                "use_gui": self.use_gui,
+            },
+        )
+        # endregion
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.episode_steps = 0
+        self._debug_reset_count += 1
         restart = True
         if self._started and self.soft_reset and self.conn is not None:
             if not self._is_done():
                 restart = False
+        if self._debug_reset_count <= 3:
+            # region agent log
+            _dbg_log(
+                "H3",
+                "envs/ppo_transformer_env.py:reset",
+                "env_reset",
+                {
+                    "reset_count": self._debug_reset_count,
+                    "restart": restart,
+                    "started": self._started,
+                    "soft_reset": self.soft_reset,
+                    "episode_horizon_steps": self.episode_horizon_steps,
+                    "sim_end": self.sim_end,
+                },
+            )
+            # endregion
         if restart:
             self._close_traci()
             self._start_sumo()
@@ -217,6 +276,7 @@ class PPOTransformerEnv(gym.Env):
 
         self.prev_wait.clear()
         self.prev_speed.clear()
+        self.prev_incoming_vehicles.clear()
 
         self._reset_window_counts()
         self.obs_history.clear()
@@ -296,11 +356,39 @@ class PPOTransformerEnv(gym.Env):
             self._traci_label = f"ppo-env-{uuid.uuid4().hex}"
             port = self._get_free_port()
             try:
+                if self._debug_start_count < 2:
+                    # region agent log
+                    _dbg_log(
+                        "H4",
+                        "envs/ppo_transformer_env.py:_start_sumo",
+                        "sumo_start_attempt",
+                        {"cmd": cmd, "label": self._traci_label, "port": port},
+                    )
+                    # endregion
+                    self._debug_start_count += 1
                 self.traci.start(cmd, label=self._traci_label, port=port)
                 self.conn = self.traci.getConnection(self._traci_label)
+                if self._debug_start_count <= 2:
+                    # region agent log
+                    _dbg_log(
+                        "H4",
+                        "envs/ppo_transformer_env.py:_start_sumo",
+                        "sumo_start_success",
+                        {"label": self._traci_label, "port": port},
+                    )
+                    # endregion
                 return
             except Exception as exc:
                 last_error = exc
+                if self._debug_start_count <= 2:
+                    # region agent log
+                    _dbg_log(
+                        "H4",
+                        "envs/ppo_transformer_env.py:_start_sumo",
+                        "sumo_start_error",
+                        {"error": repr(exc), "error_type": type(exc).__name__},
+                    )
+                    # endregion
                 time.sleep(self.sumo_start_retry_wait)
         raise RuntimeError(f"SUMO/TraCI start failed after {retries} attempts") from last_error
 
@@ -388,12 +476,56 @@ class PPOTransformerEnv(gym.Env):
 
     def _simulate_steps(self, steps: int):
         if self.conn is None:
+            if self._debug_simulate_count < 2:
+                # region agent log
+                _dbg_log(
+                    "H4",
+                    "envs/ppo_transformer_env.py:_simulate_steps",
+                    "simulate_steps_no_conn",
+                    {"steps": steps},
+                )
+                # endregion
+                self._debug_simulate_count += 1
             return
+
+        log_this = self._debug_simulate_count < 2
+        start_time = None
+        start_sim_time = None
+        if log_this:
+            start_time = time.time()
+            try:
+                start_sim_time = self.conn.simulation.getTime()
+            except Exception:
+                start_sim_time = None
+            # region agent log
+            _dbg_log(
+                "H4",
+                "envs/ppo_transformer_env.py:_simulate_steps",
+                "simulate_steps_begin",
+                {"steps": steps, "sim_time": start_sim_time},
+            )
+            # endregion
 
         for _ in range(steps):
             self.conn.simulationStep()
             self._collect_detectors()
             self._collect_metrics()
+
+        if log_this:
+            try:
+                end_sim_time = self.conn.simulation.getTime()
+            except Exception:
+                end_sim_time = None
+            elapsed = round(time.time() - start_time, 3) if start_time is not None else None
+            # region agent log
+            _dbg_log(
+                "H4",
+                "envs/ppo_transformer_env.py:_simulate_steps",
+                "simulate_steps_end",
+                {"steps": steps, "sim_time": end_sim_time, "elapsed_sec": elapsed},
+            )
+            # endregion
+            self._debug_simulate_count += 1
 
     def _collect_detectors(self):
         if self.conn is None:
@@ -404,7 +536,7 @@ class PPOTransformerEnv(gym.Env):
                 veh_ids = self.conn.inductionloop.getLastStepVehicleIDs(loop_id)
                 for vid in veh_ids:
                     vtype = self.conn.vehicle.getTypeID(vid)
-                    if vtype not in ("car", "bus", "ambulance"):
+                    if vtype not in ("car", "bus", "delivery"):
                         vtype = "car"
                     self.window_counts[approach][vtype] += 1
 
@@ -444,6 +576,20 @@ class PPOTransformerEnv(gym.Env):
 
         self.throughput_accum += len(self.conn.simulation.getArrivedIDList())
 
+        if self.incoming_lanes:
+            current_incoming = set()
+            for lane_id in self.incoming_lanes:
+                current_incoming.update(self.conn.lane.getLastStepVehicleIDs(lane_id))
+            for vid in self.prev_incoming_vehicles - current_incoming:
+                try:
+                    lane_id = self.conn.vehicle.getLaneID(vid)
+                except Exception:
+                    self.throughput_tls_accum += 1
+                    continue
+                if lane_id not in self.incoming_lanes:
+                    self.throughput_tls_accum += 1
+            self.prev_incoming_vehicles = current_incoming
+
     def _build_observation(self) -> np.ndarray:
         phase_one_hot = [1.0, 0.0] if self.current_phase == 0 else [0.0, 1.0]
         tau = self.phase_elapsed / float(self.t_green_max)
@@ -453,11 +599,11 @@ class PPOTransformerEnv(gym.Env):
             counts = self.window_counts[approach]
             car = self._apply_rfid_noise(counts.get("car", 0))
             bus = self._apply_rfid_noise(counts.get("bus", 0))
-            ambulance = self._apply_rfid_noise(counts.get("ambulance", 0))
+            delivery = self._apply_rfid_noise(counts.get("delivery", 0))
             obs_vec.extend([
                 float(car),
                 float(bus),
-                float(ambulance),
+                float(delivery),
             ])
 
         obs_vec.extend(phase_one_hot)
@@ -481,6 +627,7 @@ class PPOTransformerEnv(gym.Env):
 
     def _compute_reward(self) -> Tuple[float, Dict]:
         avg_queue = self.queue_accum / max(1, self.delta_time)
+        throughput_rate = (self.throughput_tls_accum / max(1, self.delta_time)) * 3600.0
         reward = -(
             self.alpha * self.delay_accum
             + self.beta * avg_queue
@@ -491,7 +638,9 @@ class PPOTransformerEnv(gym.Env):
             "delay": float(self.delay_accum),
             "queue": float(avg_queue),
             "stops": float(self.stops_accum),
-            "throughput": float(self.throughput_accum),
+            "throughput": float(throughput_rate),
+            "throughput_tls": float(self.throughput_tls_accum),
+            "throughput_network": float(self.throughput_accum),
             "phase": int(self.current_phase),
             "phase_elapsed": float(self.phase_elapsed),
         }
@@ -500,6 +649,7 @@ class PPOTransformerEnv(gym.Env):
         self.queue_accum = 0.0
         self.stops_accum = 0
         self.throughput_accum = 0
+        self.throughput_tls_accum = 0
 
         return reward, info
 

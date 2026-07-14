@@ -6,6 +6,7 @@ env_config:
   sumo_cfg: nets/ppo_transformer_intersection/simulation.sumocfg
   use_gui: false
   sumo_binary: sumo
+  sumo_threads: 2
   delta_time: 5
   yellow_time: 3
   t_green_min: 10
@@ -16,6 +17,8 @@ env_config:
   reward_alpha: 0.55
   reward_beta: 0.30
   reward_gamma: 0.15
+  episode_horizon_steps: 120
+  soft_reset: true
 
 model:
   custom_model: ppo_transformer_model
@@ -38,8 +41,8 @@ training:
   vf_loss_coeff: 1.0
 
 rollout:
-  num_env_runners: 219
-  num_envs_per_env_runner: 2
+  num_env_runners: 110
+  num_envs_per_env_runner: 1
   rollout_fragment_length: auto
   batch_mode: truncate_episodes
 resources:
@@ -52,7 +55,7 @@ ray:
   memory_monitor_refresh_ms: 1000
 
 stopping:
-  timesteps_total: 200000
+  timesteps_total: 1000000
 
 logging:
   log_level: INFO
@@ -66,9 +69,13 @@ tune:
   stop_timesteps: 200000
   config_overrides:
     rollout_fragment_length: auto
-    num_gpus: 1
-    num_env_runners: 54
+    num_gpus: 0  # set to 1 if CUDA GPUs are available
+    num_env_runners: 27
     num_envs_per_env_runner: 1
+    env_config:
+      sumo_threads: 2
+      episode_horizon_steps: 120
+      soft_reset: true
   search_space:
     training:
       lr:

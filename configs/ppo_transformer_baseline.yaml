@@ -4,7 +4,7 @@ env_name: ppo_transformer_env
 
 env_config:
   sumo_cfg: nets/ppo_transformer_intersection/simulation.sumocfg
-  use_gui: false
+  use_gui: true
   sumo_binary: sumo
   sumo_threads: 2
   sumo_start_retries: 5
@@ -20,7 +20,7 @@ env_config:
   reward_beta: 0.30
   reward_gamma: 0.15
   rfid_noise_rate: 0.0
-  episode_horizon_steps: 120
+  episode_horizon_steps: 10000
   soft_reset: true
 
 model:
@@ -37,22 +37,22 @@ training:
   gamma: 0.99
   lambda_: 0.95
   clip_param: 0.2
-  train_batch_size: 32000
-  minibatch_size: 1024
+  train_batch_size: 2000  # smaller for local; use 8000 on cluster
+  minibatch_size: 512
   num_epochs: 10
   entropy_coeff: 0.0
   vf_loss_coeff: 1.0
 
 rollout:
-  num_env_runners: 110
+  num_env_runners: 1  # 1 worker = jedna symulacja z GUI
   num_envs_per_env_runner: 1
   rollout_fragment_length: auto
   batch_mode: truncate_episodes
 
 resources:
-  num_cpus: 10
-  num_gpus: 1
-  object_store_memory_gb: 10
+  num_cpus: 4  # 1 worker + driver + learner
+  num_gpus: 0  # set to 1 if CUDA GPUs are available
+  object_store_memory_gb: 2  # reduce for small /dev/shm; use 10 on cluster
 
 ray:
   memory_usage_threshold: 0.90
@@ -92,21 +92,22 @@ tune:
   metric: custom_metrics/delay_mean
   mode: min
   tensorboard_hparams: true
-  num_samples: 4
+  num_samples: 1
   max_concurrent_trials: 4
-  stop_timesteps: 200000
+  stop_timesteps: 10000
   grace_period: 2
   scheduler: fifo
   config_overrides:
     rollout_fragment_length: auto
-    num_gpus: 0.2
+    num_gpus: 0  # set to 0.2 or 1 if CUDA GPUs are available
     num_cpus: 11
-    num_env_runners: 0
+    num_env_runners: 1
     num_envs_per_env_runner: 1
     env_config:
-      sumo_threads: 2
-      episode_horizon_steps: 120
-      soft_reset: True
+      use_gui: true
+      sumo_threads: 10
+      episode_horizon_steps: 10000
+      soft_reset: true
   search_space:
     training:
       lr:
@@ -127,7 +128,7 @@ tune:
         high: 0.99
       train_batch_size:
         type: choice
-        values: [8000, 12000, 16000, 24000]
+        values: [2000]
       minibatch_size:
         type: choice
         values: [256, 512, 1024]
@@ -152,4 +153,3 @@ tune:
           type: uniform
           low: 0.0
           high: 0.2
-

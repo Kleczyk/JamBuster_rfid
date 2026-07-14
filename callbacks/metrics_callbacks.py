@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Dict
+from pathlib import Path
 import inspect
 import math
 import json
@@ -37,8 +38,26 @@ class MetricsCallbacks(DefaultCallbacks):
         self._debug_episode_end_count = 0
         self._debug_episode_step_count = 0
         self._debug_no_agent_count = 0
-        self._train_metric_sums = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
+        self._train_metric_sums = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
         self._train_metric_counts = 0
+        self._train_step_sums = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
+        self._train_step_counts = 0
+        self._last_train_step_iter = None
+        self._last_train_step_metrics = None
         # region agent log
         _dbg_log(
             "H10",
@@ -58,21 +77,121 @@ class MetricsCallbacks(DefaultCallbacks):
                 {},
             )
             # endregion
-            self._train_metric_sums = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
+            self._train_metric_sums = {
+                "delay": 0.0,
+                "queue": 0.0,
+                "stops": 0.0,
+                "throughput": 0.0,
+                "throughput_tls": 0.0,
+                "throughput_network": 0.0,
+            }
             self._train_metric_counts = 0
+        if not hasattr(self, "_train_step_sums") or not hasattr(self, "_train_step_counts"):
+            self._train_step_sums = {
+                "delay": 0.0,
+                "queue": 0.0,
+                "stops": 0.0,
+                "throughput": 0.0,
+                "throughput_tls": 0.0,
+                "throughput_network": 0.0,
+            }
+            self._train_step_counts = 0
+        if not hasattr(self, "_last_train_step_iter"):
+            self._last_train_step_iter = None
+            self._last_train_step_metrics = None
 
     def _drain_train_metrics(self):
         self._ensure_train_accumulators()
         sums = dict(self._train_metric_sums)
         count = int(self._train_metric_counts)
-        self._train_metric_sums = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
+        self._train_metric_sums = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
         self._train_metric_counts = 0
         return sums, count
 
+    def _drain_train_step_metrics(self, training_iteration: int | None):
+        self._ensure_train_accumulators()
+        if (
+            training_iteration is not None
+            and self._last_train_step_iter == training_iteration
+            and self._last_train_step_metrics is not None
+        ):
+            return self._last_train_step_metrics
+        sums = dict(self._train_step_sums)
+        count = int(self._train_step_counts)
+        self._train_step_sums = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
+        self._train_step_counts = 0
+        self._last_train_step_iter = training_iteration
+        self._last_train_step_metrics = (sums, count)
+        return sums, count
+
     def _collect_train_metrics_from_workers(self, algorithm):
-        totals = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
+        totals = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
         total_count = 0
         used_group = None
+        results = None
+
+        # region agent log
+        _dbg_log(
+            "H4",
+            "callbacks/metrics_callbacks.py:_collect_train_metrics_from_workers",
+            "collect_enter",
+            {
+                "algorithm_type": type(algorithm).__name__,
+                "has_workers": getattr(algorithm, "workers", None) is not None,
+                "has_worker_group": getattr(algorithm, "worker_group", None) is not None,
+                "has_env_runner_group": getattr(algorithm, "env_runner_group", None) is not None,
+            },
+        )
+        # endregion
+
+        def _try_local(group, group_name: str):
+            for attr in ("local_worker", "local_env_runner", "_local_worker", "_local_env_runner"):
+                if not hasattr(group, attr):
+                    continue
+                try:
+                    candidate = getattr(group, attr)
+                    worker = candidate() if callable(candidate) else candidate
+                except Exception:
+                    continue
+                if worker is None:
+                    continue
+                # region agent log
+                _dbg_log(
+                    "H4",
+                    "callbacks/metrics_callbacks.py:_collect_train_metrics_from_workers",
+                    "collect_local",
+                    {"group": group_name, "attr": attr},
+                )
+                # endregion
+                item = _fetch(worker)
+                if item:
+                    sums, count = item
+                    if isinstance(sums, dict):
+                        for key in totals:
+                            totals[key] += float(sums.get(key, 0.0) or 0.0)
+                    return True, int(count or 0), f"{group_name}:{attr}"
+            return False, 0, None
 
         def _fetch(worker):
             try:
@@ -85,49 +204,86 @@ class MetricsCallbacks(DefaultCallbacks):
                 return None
             return callbacks._drain_train_metrics()
 
-        local_worker = None
-        group = getattr(algorithm, "workers", None)
-        if callable(group):
-            try:
-                group = group()
-            except Exception:
-                group = None
-        if group is not None and hasattr(group, "local_worker"):
-            try:
-                local_worker = group.local_worker()
-            except Exception:
-                local_worker = None
-        if local_worker is None:
-            group = getattr(algorithm, "worker_group", None)
+        groups = [
+            ("workers", getattr(algorithm, "workers", None)),
+            ("worker_group", getattr(algorithm, "worker_group", None)),
+            ("env_runner_group", getattr(algorithm, "env_runner_group", None)),
+        ]
+        for name, group in groups:
             if callable(group):
                 try:
                     group = group()
                 except Exception:
                     group = None
-            if group is not None and hasattr(group, "local_worker"):
-                try:
-                    local_worker = group.local_worker()
-                except Exception:
-                    local_worker = None
+            if group is None:
+                continue
+            used_local, local_count, local_group = _try_local(group, name)
+            if used_local:
+                total_count += local_count
+                used_group = local_group
+                break
+            if hasattr(group, "foreach_worker"):
+                # region agent log
+                _dbg_log(
+                    "H4",
+                    "callbacks/metrics_callbacks.py:_collect_train_metrics_from_workers",
+                    "collect_foreach_worker",
+                    {"group": name},
+                )
+                # endregion
+                results = group.foreach_worker(_fetch)
+                used_group = name
+                break
+            if hasattr(group, "foreach_env_runner"):
+                if name == "env_runner_group":
+                    # Avoid potential deadlock in foreach_worker/foreach_env_runner on env_runner_group.
+                    continue
+                # region agent log
+                _dbg_log(
+                    "H4",
+                    "callbacks/metrics_callbacks.py:_collect_train_metrics_from_workers",
+                    "collect_foreach_env_runner",
+                    {"group": name},
+                )
+                # endregion
+                results = group.foreach_env_runner(
+                    lambda env_runner: _fetch(getattr(env_runner, "worker", env_runner))
+                )
+                used_group = name
+                break
 
-        if local_worker is not None:
-            item = _fetch(local_worker)
-            if item:
+        if isinstance(results, list):
+            # region agent log
+            _dbg_log(
+                "H4",
+                "callbacks/metrics_callbacks.py:_collect_train_metrics_from_workers",
+                "collect_results",
+                {"group": used_group, "result_len": len(results)},
+            )
+            # endregion
+            for item in results:
+                if not item:
+                    continue
                 sums, count = item
                 if isinstance(sums, dict):
                     for key in totals:
                         totals[key] += float(sums.get(key, 0.0) or 0.0)
                 total_count += int(count or 0)
-                used_group = "local_worker"
-
         return totals, total_count, used_group
-
 
     def on_episode_start(self, *, worker, base_env, policies, episode, env_index, **kwargs):
         episode.user_data["delay_sum"] = 0.0
         episode.user_data["queue_sum"] = 0.0
         episode.user_data["stops_sum"] = 0.0
         episode.user_data["throughput_sum"] = 0.0
+        episode.user_data["throughput_tls_sum"] = 0.0
+        episode.user_data["throughput_network_sum"] = 0.0
+        episode.user_data["throughput_min"] = float("inf")
+        episode.user_data["throughput_max"] = float("-inf")
+        episode.user_data["throughput_tls_min"] = float("inf")
+        episode.user_data["throughput_tls_max"] = float("-inf")
+        episode.user_data["throughput_network_min"] = float("inf")
+        episode.user_data["throughput_network_max"] = float("-inf")
         episode.user_data["steps"] = 0
 
     def on_episode_step(self, *, worker, base_env, episode, env_index, **kwargs):
@@ -146,12 +302,37 @@ class MetricsCallbacks(DefaultCallbacks):
         info = self._get_info_for_episode(episode, agent_id)
         if info is None:
             return
+        worker_in_eval = bool(getattr(worker, "config", None) and getattr(worker.config, "in_evaluation", False))
+        is_eval = bool(getattr(episode, "is_evaluation", False) or getattr(episode, "evaluation", False) or worker_in_eval)
         for agent_id in [agent_id]:
             episode.user_data["delay_sum"] += float(info.get("delay", 0.0))
             episode.user_data["queue_sum"] += float(info.get("queue", 0.0))
             episode.user_data["stops_sum"] += float(info.get("stops", 0.0))
             episode.user_data["throughput_sum"] += float(info.get("throughput", 0.0))
+            episode.user_data["throughput_tls_sum"] += float(info.get("throughput_tls", 0.0))
+            episode.user_data["throughput_network_sum"] += float(info.get("throughput_network", 0.0))
+            throughput = float(info.get("throughput", 0.0))
+            throughput_tls = float(info.get("throughput_tls", 0.0))
+            throughput_network = float(info.get("throughput_network", 0.0))
+            episode.user_data["throughput_min"] = min(episode.user_data["throughput_min"], throughput)
+            episode.user_data["throughput_max"] = max(episode.user_data["throughput_max"], throughput)
+            episode.user_data["throughput_tls_min"] = min(episode.user_data["throughput_tls_min"], throughput_tls)
+            episode.user_data["throughput_tls_max"] = max(episode.user_data["throughput_tls_max"], throughput_tls)
+            episode.user_data["throughput_network_min"] = min(
+                episode.user_data["throughput_network_min"], throughput_network
+            )
+            episode.user_data["throughput_network_max"] = max(
+                episode.user_data["throughput_network_max"], throughput_network
+            )
             episode.user_data["steps"] += 1
+            if not is_eval:
+                self._train_step_sums["delay"] += float(info.get("delay", 0.0))
+                self._train_step_sums["queue"] += float(info.get("queue", 0.0))
+                self._train_step_sums["stops"] += float(info.get("stops", 0.0))
+                self._train_step_sums["throughput"] += float(info.get("throughput", 0.0))
+                self._train_step_sums["throughput_tls"] += float(info.get("throughput_tls", 0.0))
+                self._train_step_sums["throughput_network"] += float(info.get("throughput_network", 0.0))
+                self._train_step_counts += 1
             if self._debug_episode_step_count < 3:
                 # region agent log
                 _dbg_log(
@@ -165,6 +346,8 @@ class MetricsCallbacks(DefaultCallbacks):
                         "queue": info.get("queue"),
                         "stops": info.get("stops"),
                         "throughput": info.get("throughput"),
+                        "is_eval": is_eval,
+                        "train_step_counts": self._train_step_counts,
                     },
                 )
                 # endregion
@@ -178,6 +361,14 @@ class MetricsCallbacks(DefaultCallbacks):
         episode.custom_metrics["queue"] = episode.user_data.get("queue_sum", 0.0) / steps
         episode.custom_metrics["stops"] = episode.user_data.get("stops_sum", 0.0) / steps
         episode.custom_metrics["throughput"] = episode.user_data.get("throughput_sum", 0.0) / steps
+        episode.custom_metrics["throughput_tls"] = episode.user_data.get("throughput_tls_sum", 0.0) / steps
+        episode.custom_metrics["throughput_network"] = episode.user_data.get("throughput_network_sum", 0.0) / steps
+        episode.custom_metrics["throughput_min"] = episode.user_data.get("throughput_min", 0.0)
+        episode.custom_metrics["throughput_max"] = episode.user_data.get("throughput_max", 0.0)
+        episode.custom_metrics["throughput_tls_min"] = episode.user_data.get("throughput_tls_min", 0.0)
+        episode.custom_metrics["throughput_tls_max"] = episode.user_data.get("throughput_tls_max", 0.0)
+        episode.custom_metrics["throughput_network_min"] = episode.user_data.get("throughput_network_min", 0.0)
+        episode.custom_metrics["throughput_network_max"] = episode.user_data.get("throughput_network_max", 0.0)
         worker_in_eval = bool(getattr(worker, "config", None) and getattr(worker.config, "in_evaluation", False))
         is_eval = bool(getattr(episode, "is_evaluation", False) or getattr(episode, "evaluation", False) or worker_in_eval)
         if not is_eval:
@@ -185,6 +376,8 @@ class MetricsCallbacks(DefaultCallbacks):
             self._train_metric_sums["queue"] += episode.custom_metrics.get("queue", 0.0)
             self._train_metric_sums["stops"] += episode.custom_metrics.get("stops", 0.0)
             self._train_metric_sums["throughput"] += episode.custom_metrics.get("throughput", 0.0)
+            self._train_metric_sums["throughput_tls"] += episode.custom_metrics.get("throughput_tls", 0.0)
+            self._train_metric_sums["throughput_network"] += episode.custom_metrics.get("throughput_network", 0.0)
             self._train_metric_counts += 1
         if self._debug_episode_end_count < 3:
             # region agent log
@@ -229,6 +422,8 @@ class MetricsCallbacks(DefaultCallbacks):
         custom.setdefault("queue_mean", float("nan"))
         custom.setdefault("stops_mean", float("nan"))
         custom.setdefault("throughput_mean", float("nan"))
+        custom.setdefault("throughput_tls_mean", float("nan"))
+        custom.setdefault("throughput_network_mean", float("nan"))
         # region agent log
         if int(result.get("training_iteration", 0)) <= 2:
             _dbg_log(
@@ -247,6 +442,18 @@ class MetricsCallbacks(DefaultCallbacks):
         worker_sums = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
         worker_counts = 0
         worker_group = None
+        # region agent log
+        if int(result.get("training_iteration", 0)) <= 2:
+            _dbg_log(
+                "H5",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "train_metric_collect_start",
+                {
+                    "training_iteration": result.get("training_iteration"),
+                    "timesteps_total": result.get("timesteps_total"),
+                },
+            )
+        # endregion
         try:
             worker_sums, worker_counts, worker_group = self._collect_train_metrics_from_workers(algorithm)
         except Exception as exc:
@@ -259,10 +466,24 @@ class MetricsCallbacks(DefaultCallbacks):
                     {"error": repr(exc), "error_type": type(exc).__name__},
                 )
             # endregion
+        # region agent log
+        if int(result.get("training_iteration", 0)) <= 2:
+            _dbg_log(
+                "H5",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "train_metric_collect_done",
+                {
+                    "training_iteration": result.get("training_iteration"),
+                    "worker_counts": worker_counts,
+                    "worker_group": worker_group,
+                },
+            )
+        # endregion
         if worker_counts:
             for key in self._train_metric_sums:
                 self._train_metric_sums[key] += worker_sums.get(key, 0.0)
             self._train_metric_counts += worker_counts
+        step_sums, step_counts = self._drain_train_step_metrics(result.get("training_iteration"))
         # region agent log
         if int(result.get("training_iteration", 0)) <= 2:
             _dbg_log(
@@ -274,6 +495,12 @@ class MetricsCallbacks(DefaultCallbacks):
                     "worker_group": worker_group,
                     "worker_sums": worker_sums,
                 },
+            )
+            _dbg_log(
+                "H12",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "train_metric_step_fallback",
+                {"step_counts": step_counts, "step_sums": step_sums},
             )
         # endregion
         # region agent log
@@ -323,13 +550,24 @@ class MetricsCallbacks(DefaultCallbacks):
                     return value
             if self._train_metric_counts > 0:
                 return self._train_metric_sums[name.replace("_mean", "")] / self._train_metric_counts
+            if step_counts > 0:
+                return step_sums[name.replace("_mean", "")] / step_counts
             return custom.get(name)
 
         custom["delay_mean"] = _pick_metric("delay_mean")
         custom["queue_mean"] = _pick_metric("queue_mean")
         custom["stops_mean"] = _pick_metric("stops_mean")
         custom["throughput_mean"] = _pick_metric("throughput_mean")
-        mean_keys = ("delay_mean", "queue_mean", "stops_mean", "throughput_mean")
+        custom["throughput_tls_mean"] = _pick_metric("throughput_tls_mean")
+        custom["throughput_network_mean"] = _pick_metric("throughput_network_mean")
+        mean_keys = (
+            "delay_mean",
+            "queue_mean",
+            "stops_mean",
+            "throughput_mean",
+            "throughput_tls_mean",
+            "throughput_network_mean",
+        )
         fallback_value = 1.0e9
         for key in mean_keys:
             value = custom.get(key)
@@ -353,12 +591,71 @@ class MetricsCallbacks(DefaultCallbacks):
             )
         # endregion
 
-        self._train_metric_sums = {"delay": 0.0, "queue": 0.0, "stops": 0.0, "throughput": 0.0}
+        self._train_metric_sums = {
+            "delay": 0.0,
+            "queue": 0.0,
+            "stops": 0.0,
+            "throughput": 0.0,
+            "throughput_tls": 0.0,
+            "throughput_network": 0.0,
+        }
         self._train_metric_counts = 0
 
         self._mirror_training_custom_metrics(result)
         self._alias_metric_prefix(result, "train_tune", custom)
         # region agent log
+        if int(result.get("training_iteration", 0)) <= 2:
+            algo_logdir = getattr(algorithm, "logdir", None)
+            algo_internal_logdir = getattr(algorithm, "_logdir", None)
+            local_worker_logdir = None
+            try:
+                workers = getattr(algorithm, "workers", None)
+                if callable(workers):
+                    workers = workers()
+                if workers is not None and hasattr(workers, "local_worker"):
+                    local_worker = workers.local_worker()
+                    local_worker_logdir = getattr(local_worker, "logdir", None)
+            except Exception:
+                local_worker_logdir = None
+            _dbg_log(
+                "H13",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "train_result_logdirs",
+                {
+                    "result_logdir": result.get("logdir"),
+                    "algo_logdir": algo_logdir,
+                    "algo__logdir": algo_internal_logdir,
+                    "local_worker_logdir": local_worker_logdir,
+                    "has_train_tune": any(str(key).startswith("train_tune/") for key in result.keys()),
+                },
+            )
+            event_counts = {}
+            for label, raw_path in (
+                ("result_logdir", result.get("logdir")),
+                ("algo_logdir", algo_logdir),
+                ("algo__logdir", algo_internal_logdir),
+            ):
+                if not raw_path:
+                    continue
+                try:
+                    path = Path(str(raw_path))
+                    if not path.exists():
+                        event_counts[label] = {"exists": False, "count": 0}
+                        continue
+                    files = list(path.rglob("events.out.tfevents.*"))
+                    event_counts[label] = {
+                        "exists": True,
+                        "count": len(files),
+                        "first": str(files[0]) if files else None,
+                    }
+                except Exception as exc:
+                    event_counts[label] = {"error": type(exc).__name__}
+            _dbg_log(
+                "H13",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "train_result_event_files",
+                event_counts,
+            )
         _dbg_log(
             "H2",
             "callbacks/metrics_callbacks.py:on_train_result",
@@ -372,6 +669,8 @@ class MetricsCallbacks(DefaultCallbacks):
                 "queue_mean": custom.get("queue_mean"),
                 "stops_mean": custom.get("stops_mean"),
                 "throughput_mean": custom.get("throughput_mean"),
+                "train_tune_delay_mean": result.get("train_tune/delay_mean"),
+                "train_tune_queue_mean": result.get("train_tune/queue_mean"),
             },
         )
         # endregion
@@ -426,6 +725,23 @@ class MetricsCallbacks(DefaultCallbacks):
             # endregion
             return
 
+        sampled_this_iter = result.get("num_env_steps_sampled_this_iter")
+        trained_this_iter = result.get("num_env_steps_trained_this_iter")
+        if not sampled_this_iter or not trained_this_iter:
+            # region agent log
+            _dbg_log(
+                "H1",
+                "callbacks/metrics_callbacks.py:on_train_result",
+                "noisy_eval_skipped_no_train_steps",
+                {
+                    "sampled_this_iter": sampled_this_iter,
+                    "trained_this_iter": trained_this_iter,
+                    "training_iteration": result.get("training_iteration"),
+                },
+            )
+            # endregion
+            return
+
         interval = int(noisy_cfg.get("interval", 0) or 0)
         if interval <= 0:
             # region agent log
@@ -466,8 +782,33 @@ class MetricsCallbacks(DefaultCallbacks):
             },
         )
         # endregion
-
+        start_noisy = time.time()
+        # region agent log
+        _dbg_log(
+            "H1",
+            "callbacks/metrics_callbacks.py:on_train_result",
+            "noisy_eval_start",
+            {
+                "training_iteration": result.get("training_iteration"),
+                "duration": noisy_cfg.get("duration"),
+                "duration_unit": noisy_cfg.get("duration_unit"),
+                "num_env_runners": noisy_cfg.get("num_env_runners"),
+            },
+        )
+        # endregion
         noisy_result = algorithm.evaluate()
+        # region agent log
+        _dbg_log(
+            "H1",
+            "callbacks/metrics_callbacks.py:on_train_result",
+            "noisy_eval_done",
+            {
+                "training_iteration": result.get("training_iteration"),
+                "elapsed_sec": round(time.time() - start_noisy, 3),
+                "noisy_result_type": type(noisy_result).__name__,
+            },
+        )
+        # endregion
         result["evaluation_noisy"] = self._normalize_noisy_result(noisy_result)
         if isinstance(result.get("evaluation_noisy"), dict):
             self._alias_metric_prefix(result, "baseline_noisy_eval", result["evaluation_noisy"].get("custom_metrics"))
@@ -577,8 +918,7 @@ class MetricsCallbacks(DefaultCallbacks):
             if isinstance(value, (int, float)) and math.isfinite(value):
                 result[f"{prefix}/{key}"] = value
 
-    @staticmethod
-    def _get_info_for_episode(episode, agent_id):
+    def _get_info_for_episode(self, episode, agent_id):
         if agent_id is not None:
             info = episode.last_info_for(agent_id)
             if info:
