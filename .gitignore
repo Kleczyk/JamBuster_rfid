@@ -5,6 +5,14 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+missfont.log
+
 # Outputs and logs
 ray_results/
 outputs/
@@ -17,3 +25,30 @@ outputs/
 # Local research artifacts
 article/
 
+
+
+
+
+
+# Generated anomaly-detection datasets (grid_rfid)
+datasets/
+
+# SUMO induction-loop dump written next to the detector additional file (read live via TraCI)
+grid_rfid/assets/rfid_loops.xml
+
+# Cloned sub-repo (https://github.com/Kleczyk/JamBuster) — not part of this repo
+JamBuster/
+
+# Generated shareable packages (CSV exports, zips)
+export/
+
+# Scratch LaTeX/poster workspace
+__temp/
+
+# SUMO test-scenario outputs
+**/queueoutput_test.xml
+**/tripinfo_test.xml
+**/summary_test.xml
+
+# Editor/agent debug logs
+.cursor/
