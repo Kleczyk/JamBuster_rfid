@@ -169,6 +169,26 @@ TensorBoard by `callbacks/metrics_callbacks.py`.
 tensorboard --logdir ray_results
 ```
 
+## JamBuster — symulacja Rzeszów (GUI)
+
+Sklonuj [JamBuster](https://github.com/Kleczyk/JamBuster) obok tego repozytorium jako `JamBuster/` (ścieżka:
+`JamBuster_rfid/JamBuster/...`).
+
+**Z korzenia `JamBuster_rfid`** (nie wchodź drugi raz w `JamBuster/src/map_p05`, bo wtedy `cd JamBuster/...` się wywali):
+
+```bash
+# Poprawa ostrzeżeń tlLogic + uruchomienie SUMO GUI
+./scripts/run_jam_buster_map_p05.sh
+
+# Samo przycięcie faz (uv run, jak w reszcie projektu):
+uv run python scripts/fix_sumo_tl_phases.py JamBuster/src/map_p05/map.net.xml
+
+# Tylko GUI (jeśli sieć już poprawiona):
+sumo-gui -c JamBuster/src/map_p05/sim.sumocfg
+```
+
+Symulacja **z oknem** wymaga `sumo-gui`, nie `sumo`. Headless: `./scripts/run_jam_buster_map_p05.sh headless 600`
+
 ## Realtime Traffic Metrics (TraCI)
 
 To collect **per‑lane** and **per‑junction** metrics in real time (queues, speeds,
