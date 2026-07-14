@@ -1,0 +1,160 @@
+{
+  "args": {
+    "out": "datasets/grid_rfid_v2",
+    "net": "/home/dk/repos/JamBuster_rfid/grid_rfid/assets/grid3x3.net.xml",
+    "train": 200,
+    "val": 50,
+    "test": 50,
+    "horizon": 1800.0,
+    "delta": 5,
+    "window": 48,
+    "stride": 4,
+    "healthy_frac": 0.5,
+    "seed": 2025,
+    "class_set": "v2",
+    "class_ban_frac": 0.5,
+    "n_ban_classes": [
+      1,
+      2
+    ]
+  },
+  "classes": [
+    "car",
+    "ev",
+    "delivery",
+    "bus",
+    "truck",
+    "trailer"
+  ],
+  "mix": {
+    "car": 0.52,
+    "ev": 0.18,
+    "delivery": 0.1,
+    "bus": 0.08,
+    "truck": 0.08,
+    "trailer": 0.04
+  },
+  "episodes": {
+    "train": {
+      "healthy": 100,
+      "class_ban": 48,
+      "full_closure": 52
+    },
+    "val": {
+      "full_closure": 22,
+      "class_ban": 28
+    },
+    "test": {
+      "class_ban": 23,
+      "full_closure": 27
+    }
+  },
+  "truncated_episodes": [],
+  "class_count_share": {
+    "car": 0.3707,
+    "ev": 0.1341,
+    "delivery": 0.1181,
+    "bus": 0.1436,
+    "truck": 0.1235,
+    "trailer": 0.11
+  },
+  "profile_peak_over_min": 15.68,
+  "signature": {
+    "full_closure_mean_before": 0.29,
+    "full_closure_mean_after60s": 0.0,
+    "class_ban_mean_before": 0.05,
+    "class_ban_mean_after60s": 0.0,
+    "open_lanes_mean": 0.37,
+    "reroute_open_increase_pct": 33.70000076293945
+  },
+  "zero_window_share_open_lanes": {
+    "car": 0.3086,
+    "ev": 0.4771,
+    "delivery": 0.5158,
+    "bus": 0.5277,
+    "truck": 0.5146,
+    "trailer": 0.6471
+  },
+  "zero_window_share_open_lanes_total": 0.1888,
+  "labels": {
+    "train": {
+      "windows": 15800,
+      "anomalous_window_frac": 0.482,
+      "positive_lane_frac": 0.0263,
+      "y_values": {
+        "0.04": 1502,
+        "0.08": 3880,
+        "0.1": 2834,
+        "0.12": 2224,
+        "0.14": 1494,
+        "0.16": 1004,
+        "0.18": 1764,
+        "1": 15252
+      }
+    },
+    "val": {
+      "windows": 3950,
+      "anomalous_window_frac": 0.9666,
+      "positive_lane_frac": 0.0467,
+      "y_values": {
+        "0.04": 876,
+        "0.08": 1156,
+        "0.1": 622,
+        "0.12": 996,
+        "0.14": 842,
+        "0.16": 1098,
+        "0.18": 1922,
+        "1": 5762
+      }
+    },
+    "test": {
+      "windows": 3950,
+      "anomalous_window_frac": 0.9608,
+      "positive_lane_frac": 0.0517,
+      "y_values": {
+        "0.04": 1164,
+        "0.08": 1148,
+        "0.1": 1216,
+        "0.12": 604,
+        "0.14": 430,
+        "0.16": 610,
+        "0.18": 1202,
+        "1": 8324
+      }
+    }
+  },
+  "closures_per_edge": {
+    "B0A0": 14,
+    "B0C0": 11,
+    "A1A0": 11,
+    "C1B1": 16,
+    "B0B1": 15,
+    "B2B1": 15,
+    "C0B0": 15,
+    "B1B0": 11,
+    "C2C1": 15,
+    "B1B2": 9,
+    "B2A2": 12,
+    "A2A1": 10,
+    "B1C1": 13,
+    "C0C1": 13,
+    "A0B0": 11,
+    "A2B2": 12,
+    "B2C2": 31,
+    "B1A1": 26,
+    "C1C2": 21,
+    "A1B1": 19,
+    "A1A2": 23,
+    "C1C0": 26,
+    "C2B2": 21,
+    "A0A1": 23
+  },
+  "ban_counts_per_class": {
+    "car": 0,
+    "ev": 0,
+    "delivery": 83,
+    "bus": 71,
+    "truck": 66,
+    "trailer": 69
+  }
+}
